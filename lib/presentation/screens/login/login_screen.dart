@@ -486,12 +486,13 @@ class _LoginScreenState extends State<LoginScreen>
 
     try {
       await authProvider.login(request);
-      // Si login es exitoso, navega al dashboard (home)
+      if (!mounted) return; // <-- Solución recomendada
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } catch (e) {
+      if (!mounted) return; // <-- Solución recomendada
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al iniciar sesión: $e'),
