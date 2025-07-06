@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _animationController.dispose();
     _logoController.dispose();
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -129,22 +129,19 @@ class _LoginScreenState extends State<LoginScreen>
 
                     const SizedBox(height: 40),
 
-                    // Campo de email
+                    // Campo de usuario (NO correo)
                     SlideTransition(
                       position: _slideAnimation,
                       child: FadeTransition(
                         opacity: _fadeAnimation,
                         child: _buildCustomTextField(
-                          controller: _emailController,
-                          hintText: 'Correo electrónico',
-                          prefixIcon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
+                          controller: _usernameController,
+                          hintText: 'Nombre de usuario',
+                          prefixIcon: Icons.person_outline,
+                          keyboardType: TextInputType.text,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Por favor ingresa tu correo';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Por favor ingresa un correo válido';
+                              return 'Por favor ingresa tu usuario';
                             }
                             return null;
                           },
@@ -485,3 +482,4 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 }
+
