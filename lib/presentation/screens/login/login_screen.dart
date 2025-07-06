@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -67,6 +66,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Login')),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
