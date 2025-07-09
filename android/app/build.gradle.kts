@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.example.myapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Esta línea fuerza a usar la versión 27 del Android NDK,
+    // que es requerida por algunos plugins como flutter_secure_storage y path_provider_android.
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

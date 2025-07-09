@@ -10,12 +10,15 @@ import '../../presentation/screens/producto/producto_detail_screen.dart';
 import '../../presentation/screens/supplier/supplier_list_screen.dart';
 import '../../presentation/screens/supplier/supplier_form_screen.dart';
 import '../../presentation/screens/supplier/supplier_detail_screen.dart';
-import '../../presentation/screens/venta/venta_list_screen.dart';
-import '../../presentation/screens/venta/venta_form_screen.dart';
-import '../../presentation/screens/venta/venta_detail_screen.dart';
+
 import '../../presentation/screens/compra/compra_list_screen.dart';
 import '../../presentation/screens/compra/compra_form_screen.dart';
 import '../../presentation/screens/compra/compra_detail_screen.dart';
+
+// Agrega las pantallas de venta:
+import '../../presentation/screens/venta/venta_list_screen.dart';
+import '../../presentation/screens/venta/venta_form_screen.dart';
+import '../../presentation/screens/venta/venta_detail_screen.dart';
 
 import '../../data/models/cliente_model.dart';
 import '../../data/models/producto_model.dart';
@@ -89,14 +92,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (context) => SupplierDetailScreen(supplier: supplier),
         );
-      // Venta
-      case '/venta-form':
-        return MaterialPageRoute(builder: (context) => const VentaFormScreen());
-      case '/venta-detail':
-        final venta = settings.arguments as VentaModel;
-        return MaterialPageRoute(
-          builder: (context) => VentaDetailScreen(venta: venta),
-        );
+
       // Compra
       case '/compra-form':
         return MaterialPageRoute(
@@ -106,6 +102,14 @@ class AppRoutes {
         final compra = settings.arguments as CompraModel;
         return MaterialPageRoute(
           builder: (context) => CompraDetailScreen(compra: compra),
+        );
+      // Venta
+      case '/venta-form':
+        return MaterialPageRoute(builder: (context) => const VentaFormScreen());
+      case '/venta-detail':
+        final venta = settings.arguments as VentaModel;
+        return MaterialPageRoute(
+          builder: (context) => VentaDetailScreen(venta: venta),
         );
       default:
         return MaterialPageRoute(

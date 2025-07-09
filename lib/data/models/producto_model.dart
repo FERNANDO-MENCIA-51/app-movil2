@@ -38,11 +38,18 @@ class ProductoModel {
       categoria: json['categoria'] as String?,
       precioVenta: (json['precioVenta'] as num).toDouble(),
       stock: json['stock'] as int,
-      estatus: json['estatus'] as String,
-      fechaIngreso: DateTime.parse(json['fechaIngreso'] as String),
-      supplier: SupplierModel.fromJson(
-        json['supplier'] as Map<String, dynamic>,
-      ),
+      // Cambia aquí: acepta también 'A' como activo
+      estatus: (json['estatus'] as String).toLowerCase() == 'a'
+          ? 'activo'
+          : (json['estatus'] as String).toLowerCase() == 'i'
+          ? 'inactivo'
+          : (json['estatus'] as String),
+      fechaIngreso: json['fechaIngreso'] != null
+          ? DateTime.parse(json['fechaIngreso'])
+          : DateTime.now(),
+      supplier: json['supplier'] != null
+          ? SupplierModel.fromJson(json['supplier'])
+          : SupplierModel.empty(),
     );
   }
 

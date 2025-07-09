@@ -1,4 +1,5 @@
 import 'cliente_model.dart';
+import 'venta_detalle_model.dart';
 
 class VentaModel {
   final int? ventaID;
@@ -6,7 +7,7 @@ class VentaModel {
   final double totalVenta;
   final String estado;
   final ClienteModel cliente;
-
+  final List<VentaDetalleModel> detalles;
 
   VentaModel({
     this.ventaID,
@@ -14,17 +15,19 @@ class VentaModel {
     required this.totalVenta,
     required this.estado,
     required this.cliente,
-    // this.detalles,
+    required this.detalles,
   });
 
   factory VentaModel.fromJson(Map<String, dynamic> json) {
- 
     return VentaModel(
       ventaID: json['ventaID'] as int?,
       fechaVenta: DateTime.parse(json['fechaVenta'] as String),
       totalVenta: (json['totalVenta'] as num).toDouble(),
       estado: json['estado'] as String,
       cliente: ClienteModel.fromJson(json['cliente'] as Map<String, dynamic>),
+      detalles: (json['detalles'] as List<dynamic>?)
+          ?.map((e) => VentaDetalleModel.fromJson(e))
+          .toList() ?? [],
     );
   }
 
@@ -35,7 +38,7 @@ class VentaModel {
       'totalVenta': totalVenta,
       'estado': estado,
       'cliente': cliente.toJson(),
-      // 'detalles': detalles?.map((d) => d.toJson()).toList(),
+      'detalles': detalles.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -46,6 +49,6 @@ class VentaModel {
 
   @override
   String toString() {
-    return 'VentaModel(ventaID: $ventaID, fechaVenta: $fechaVenta, totalVenta: $totalVenta, estado: $estado, cliente: $cliente)';
+    return 'VentaModel(ventaID: $ventaID, fechaVenta: $fechaVenta, totalVenta: $totalVenta, estado: $estado, cliente: $cliente, detalles: $detalles)';
   }
 }

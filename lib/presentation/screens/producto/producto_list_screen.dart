@@ -72,16 +72,16 @@ class _ProductoListScreenState extends State<ProductoListScreen>
       List<ProductoModel> productos;
       switch (_selectedFilter) {
         case 'activos':
-          productos = await _productoService.getActiveProductos();
+          productos = await _productoService.getActiveProductos(context);
           break;
         case 'inactivos':
-          productos = await _productoService.getInactiveProductos();
+          productos = await _productoService.getInactiveProductos(context);
           break;
         case 'stock_bajo':
-          productos = await _productoService.getLowStockProductos();
+          productos = await _productoService.getLowStockProductos(context);
           break;
         default:
-          productos = await _productoService.getAllProductos();
+          productos = await _productoService.getAllProductos(context);
       }
 
       setState(() {
@@ -530,15 +530,9 @@ class _ProductoListScreenState extends State<ProductoListScreen>
                     opacity: value,
                     child: ProductoCard(
                       producto: producto,
-                      onTap: () {
-
-                      },
-                      onView: () {
-
-                      },
-                      onEdit: () {
-
-                      },
+                      onTap: () {},
+                      onView: () {},
+                      onEdit: () {},
                       onDelete: () {
                         _showDeleteRestoreDialog(producto);
                       },
@@ -600,9 +594,7 @@ class _ProductoListScreenState extends State<ProductoListScreen>
         ],
       ),
       child: FloatingActionButton(
-        onPressed: () {
-
-        },
+        onPressed: () {},
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: const Icon(Icons.add, color: AppColors.textPrimary, size: 28),
@@ -656,10 +648,16 @@ class _ProductoListScreenState extends State<ProductoListScreen>
   Future<void> _deleteOrRestoreProduct(ProductoModel producto) async {
     try {
       if (producto.isActivo) {
-        await _productoService.deleteLogicalProducto(producto.productoID!);
+        await _productoService.deleteLogicalProducto(
+          producto.productoID!,
+          context: context,
+        );
         _showSuccessSnackBar('Producto eliminado exitosamente');
       } else {
-        await _productoService.restoreProducto(producto.productoID!);
+        await _productoService.restoreProducto(
+          producto.productoID!,
+          context: context,
+        );
         _showSuccessSnackBar('Producto restaurado exitosamente');
       }
       _loadProductos();

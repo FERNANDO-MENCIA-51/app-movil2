@@ -8,7 +8,8 @@ import '../models/register_request_model.dart';
 import '../models/register_response_model.dart';
 
 class AuthService {
-  static const String _baseUrl = 'http://localhost:8080/v1/api/auth';
+  // Tu IP local es 192.168.0.102 según tu ipconfig
+  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/auth';
 
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   static const String _tokenKey = 'jwt_token';

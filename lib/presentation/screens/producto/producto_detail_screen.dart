@@ -656,13 +656,19 @@ class _ProductoDetailScreenState extends State<ProductoDetailScreen>
 
     try {
       if (_producto.isActivo) {
-        await _productoService.deleteLogicalProducto(_producto.productoID!);
+        await _productoService.deleteLogicalProducto(
+          _producto.productoID!,
+          context: context,
+        );
         _showSuccessSnackBar('Producto eliminado exitosamente');
         setState(() {
           _producto = _producto.copyWith(estatus: 'inactivo');
         });
       } else {
-        await _productoService.restoreProducto(_producto.productoID!);
+        await _productoService.restoreProducto(
+          _producto.productoID!,
+          context: context,
+        );
         _showSuccessSnackBar('Producto restaurado exitosamente');
         setState(() {
           _producto = _producto.copyWith(estatus: 'activo');

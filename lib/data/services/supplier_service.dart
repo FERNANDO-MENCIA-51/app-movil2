@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/supplier_model.dart';
+import '../services/auth_service.dart';
 
 class SupplierService {
   // Reemplaza con la URL base de tu backend
-  static const String _baseUrl = 'http://localhost:8080/v1/api/suppliers';
+  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/suppliers';
+  final AuthService _authService = AuthService();
 
   // Headers por defecto
   static const Map<String, String> _headers = {
@@ -31,21 +33,21 @@ class SupplierService {
 
   /// Método para obtener solo proveedores activos
   Future<List<SupplierModel>> getActiveSuppliers() async {
-    try {
-      final response = await http.get(Uri.parse('$_baseUrl/active'));
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonResponse = json.decode(response.body);
-        return jsonResponse
-            .map((item) => SupplierModel.fromJson(item))
-            .toList();
-      } else {
-        throw Exception(
-          'Failed to load active suppliers: ${response.statusCode}',
-        );
-      }
-    } catch (e) {
-      throw Exception('Error connecting to server: $e');
+    final token = await _authService.getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/active'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    if (response.statusCode == 200) {
+      final List jsonResponse = json.decode(response.body);
+      return jsonResponse.map((item) => SupplierModel.fromJson(item)).toList();
+    } else {
+      throw Exception(
+        'Failed to load active suppliers: ${response.statusCode}',
+      );
     }
   }
 

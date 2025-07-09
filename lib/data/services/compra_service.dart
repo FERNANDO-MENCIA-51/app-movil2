@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/compra_model.dart';
+import '../services/auth_service.dart';
 
 class CompraService {
-  static const String _baseUrl = 'http://localhost:8080/v1/api/compras';
-  static const Map<String, String> _headers = {
-    'Content-Type': 'application/json; charset=UTF-8',
-  };
+  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/compras';
+  final AuthService _authService = AuthService();
 
   Future<List<CompraModel>> getAllCompras() async {
     final response = await http.get(Uri.parse(_baseUrl));
@@ -19,7 +18,14 @@ class CompraService {
   }
 
   Future<List<CompraModel>> getActiveCompras() async {
-    final response = await http.get(Uri.parse('$_baseUrl/active'));
+    final token = await _authService.getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/active'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
     if (response.statusCode == 200) {
       final List jsonResponse = json.decode(response.body);
       return jsonResponse.map((item) => CompraModel.fromJson(item)).toList();
@@ -54,7 +60,7 @@ class CompraService {
   Future<CompraModel> createCompra(CompraModel compra) async {
     final response = await http.post(
       Uri.parse(_baseUrl),
-      headers: _headers,
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode(compra.toJson()),
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -67,7 +73,7 @@ class CompraService {
   Future<CompraModel> updateCompra(int id, CompraModel compra) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/$id'),
-      headers: _headers,
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode(compra.toJson()),
     );
     if (response.statusCode == 200) {

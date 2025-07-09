@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/models/venta_model.dart';
 import '../../../data/models/venta_detalle_model.dart';
-import '../../../data/services/venta_detalle_service.dart';
+import '../../../data/services/venta_transaccion_service.dart';
 
 class VentaDetailScreen extends StatefulWidget {
   final VentaModel venta;
@@ -13,9 +13,9 @@ class VentaDetailScreen extends StatefulWidget {
   State<VentaDetailScreen> createState() => _VentaDetailScreenState();
 }
 
-class _VentaDetailScreenState extends State<VentaDetailScreen>
-    with TickerProviderStateMixin {
-  final VentaDetalleService _detalleService = VentaDetalleService();
+class _VentaDetailScreenState extends State<VentaDetailScreen> {
+  final VentaTransaccionService _ventaTransaccionService =
+      VentaTransaccionService();
   List<VentaDetalleModel> _detalles = [];
   bool _isLoading = true;
 
@@ -26,15 +26,20 @@ class _VentaDetailScreenState extends State<VentaDetailScreen>
   }
 
   Future<void> _loadDetalles() async {
-    // Si tu backend permite filtrar por ventaID, deberías usarlo aquí.
-    // Por simplicidad, filtramos en frontend.
-    final detalles = await _detalleService.getActiveVentaDetalles();
-    setState(() {
-      _detalles = detalles
-          .where((d) => d.venta.ventaID == widget.venta.ventaID)
-          .toList();
-      _isLoading = false;
-    });
+    try {
+      final ventaCompleta = await _ventaTransaccionService.obtenerVentaCompleta(
+        widget.venta.ventaID!,
+      );
+      setState(() {
+        _detalles = ventaCompleta?.detalles ?? [];
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _detalles = [];
+        _isLoading = false;
+      });
+    }
   }
 
   double get subtotal => _detalles.fold(0, (sum, d) => sum + d.subtotal);
@@ -44,144 +49,33 @@ class _VentaDetailScreenState extends State<VentaDetailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.backgroundDark,
-              AppColors.surfaceDark,
-              AppColors.cardDark,
-            ],
-          ),
+      appBar: AppBar(
+        title: const Text(
+          'Detalle de Venta',
+          style: TextStyle(color: AppColors.textPrimary),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildCustomAppBar(),
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
-                        ),
-                      )
-                    : SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: _buildContent(),
-                        ),
-                      ),
-              ),
-            ],
-          ),
-        ),
+        backgroundColor: AppColors.backgroundDark,
       ),
-    );
-  }
-
-  Widget _buildCustomAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.surfaceDark.withValues(alpha: 0.8),
-            AppColors.cardDark.withValues(alpha: 0.6),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.2),
-                  AppColors.secondary.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppColors.primary,
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Detalle de Venta',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
+      backgroundColor: AppColors.backgroundDark,
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildVentaInfo(),
+                    const SizedBox(height: 20),
+                    _buildDetalleList(),
+                    const SizedBox(height: 20),
+                    _buildResumen(),
+                  ],
                 ),
               ),
-              Text(
-                widget.venta.cliente.nombreCompleto,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: widget.venta.isActivo
-                  ? AppColors.success.withValues(alpha: 0.2)
-                  : AppColors.error.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: widget.venta.isActivo
-                    ? AppColors.success
-                    : AppColors.error,
-                width: 1,
-              ),
             ),
-            child: Text(
-              widget.venta.isActivo ? 'ACTIVO' : 'INACTIVO',
-              style: TextStyle(
-                color: widget.venta.isActivo
-                    ? AppColors.success
-                    : AppColors.error,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildVentaInfo(),
-        const SizedBox(height: 20),
-        _buildDetalleList(),
-        const SizedBox(height: 20),
-        _buildResumen(),
-      ],
     );
   }
 

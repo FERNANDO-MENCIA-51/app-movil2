@@ -26,7 +26,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
   final _emailController = TextEditingController();
   final _direccionController = TextEditingController();
 
-  String _selectedTipoDocumento = 'DNI';
   String _selectedEstado = 'activo';
   bool _isLoading = false;
 
@@ -34,8 +33,10 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  final List<String> _tiposDocumento = ['DNI', 'RUC', 'Pasaporte', 'CE'];
-  final List<String> _estados = ['activo', 'inactivo'];
+  // Declara los tipos de documento permitidos
+  final List<String> _tiposDocumento = ['DNI', 'CE'];
+  String? _selectedTipoDocumento;
+
 
   @override
   void initState() {
@@ -75,7 +76,16 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
       _telefonoController.text = cliente.telefono ?? '';
       _emailController.text = cliente.email ?? '';
       _direccionController.text = cliente.direccion ?? '';
-      _selectedEstado = cliente.estado;
+      // Normaliza el estado para el dropdown (solo para editar, pero ya no se usará en el form)
+      _selectedEstado = (cliente.estado.toUpperCase() == 'A')
+          ? 'activo'
+          : 'inactivo';
+    } else {
+      // Nuevo cliente: por defecto 'activo'
+      _selectedEstado = 'activo';
+    }
+    if (!_tiposDocumento.contains(_selectedTipoDocumento)) {
+      _selectedTipoDocumento = _tiposDocumento.first;
     }
   }
 
@@ -253,7 +263,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
                   Expanded(
                     flex: 2,
                     child: _buildDropdownField(
-                      value: _selectedTipoDocumento,
+                      value: _selectedTipoDocumento ?? _tiposDocumento.first,
                       items: _tiposDocumento,
                       label: 'Tipo Documento',
                       icon: Icons.badge,
@@ -319,21 +329,6 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
                 label: 'Dirección',
                 icon: Icons.location_on,
                 maxLines: 2,
-              ),
-
-              const SizedBox(height: 30),
-
-              _buildSectionHeader('Estado', Icons.settings),
-              const SizedBox(height: 20),
-
-              _buildDropdownField(
-                value: _selectedEstado,
-                items: _estados,
-                label: 'Estado del Cliente',
-                icon: Icons.toggle_on,
-                onChanged: (value) {
-                  setState(() => _selectedEstado = value!);
-                },
               ),
 
               const SizedBox(height: 40),
@@ -463,6 +458,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
       ),
       child: DropdownButtonFormField<String>(
         value: value,
+        isExpanded: true, // <-- Esto previene el overflow horizontal
         items: items
             .map(
               (item) => DropdownMenuItem(
@@ -576,11 +572,16 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
     setState(() => _isLoading = true);
 
     try {
+      // Siempre envía 'A' al crear, y el valor real al editar
+      final String estadoBackend = widget.isEditing
+          ? (_selectedEstado == 'activo' ? 'A' : 'I')
+          : 'A';
+
       final cliente = ClienteModel(
         clienteID: widget.cliente?.clienteID,
         nombres: _nombresController.text.trim(),
         apellidos: _apellidosController.text.trim(),
-        tipoDocumento: _selectedTipoDocumento,
+        tipoDocumento: _selectedTipoDocumento ?? _tiposDocumento.first,
         nroDocumento: _nroDocumentoController.text.trim(),
         telefono: _telefonoController.text.trim().isEmpty
             ? null
@@ -591,7 +592,7 @@ class _ClienteFormScreenState extends State<ClienteFormScreen>
         direccion: _direccionController.text.trim().isEmpty
             ? null
             : _direccionController.text.trim(),
-        estado: _selectedEstado,
+        estado: estadoBackend,
       );
 
       if (widget.isEditing) {

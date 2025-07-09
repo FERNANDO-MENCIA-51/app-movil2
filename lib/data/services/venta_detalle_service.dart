@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/venta_detalle_model.dart';
 
 class VentaDetalleService {
-  static const String _baseUrl = 'http://localhost:8080/v1/api/venta-detalle';
+  static const String _baseUrl = 'http://192.168.0.102:8080:8080/v1/api/venta-detalle';
   static const Map<String, String> _headers = {
     'Content-Type': 'application/json; charset=UTF-8',
   };

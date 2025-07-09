@@ -93,6 +93,11 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen>
   }
 
   Widget _buildCustomAppBar() {
+    // Normaliza el estado para la UI
+    final bool isActivo = _cliente.estado.toUpperCase() == 'A';
+    final String estadoUi = isActivo ? 'ACTIVO' : 'INACTIVO';
+    final Color estadoColor = isActivo ? AppColors.success : AppColors.error;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: BoxDecoration(
@@ -156,19 +161,14 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _cliente.isActivo
-                  ? AppColors.success.withValues(alpha: 0.2)
-                  : AppColors.error.withValues(alpha: 0.2),
+              color: estadoColor.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: _cliente.isActivo ? AppColors.success : AppColors.error,
-                width: 1,
-              ),
+              border: Border.all(color: estadoColor, width: 1),
             ),
             child: Text(
-              _cliente.isActivo ? 'ACTIVO' : 'INACTIVO',
+              estadoUi,
               style: TextStyle(
-                color: _cliente.isActivo ? AppColors.success : AppColors.error,
+                color: estadoColor,
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
               ),
@@ -276,6 +276,11 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen>
   }
 
   Widget _buildPersonalInfoCard() {
+    // Normaliza el estado para la UI
+    final bool isActivo = _cliente.estado.toUpperCase() == 'A';
+    final String estadoUi = isActivo ? 'ACTIVO' : 'INACTIVO';
+    final Color estadoColor = isActivo ? AppColors.success : AppColors.error;
+
     return _buildInfoCard(
       title: 'Información Personal',
       icon: Icons.person,
@@ -294,9 +299,9 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen>
         ),
         _buildInfoRow(
           'Estado',
-          _cliente.estado.toUpperCase(),
-          _cliente.isActivo ? Icons.check_circle : Icons.cancel,
-          color: _cliente.isActivo ? AppColors.success : AppColors.error,
+          estadoUi,
+          isActivo ? Icons.check_circle : Icons.cancel,
+          color: estadoColor,
         ),
       ],
     );
@@ -580,17 +585,17 @@ class _ClienteDetailScreenState extends State<ClienteDetailScreen>
     setState(() => _isLoading = true);
 
     try {
-      if (_cliente.isActivo) {
+      if (_cliente.estado.toUpperCase() == 'A') {
         await _clienteService.deleteLogical(_cliente.clienteID!);
         _showSuccessSnackBar('Cliente eliminado exitosamente');
         setState(() {
-          _cliente = _cliente.copyWith(estado: 'inactivo');
+          _cliente = _cliente.copyWith(estado: 'I'); // Cambia a 'I'
         });
       } else {
         await _clienteService.restoreClient(_cliente.clienteID!);
         _showSuccessSnackBar('Cliente restaurado exitosamente');
         setState(() {
-          _cliente = _cliente.copyWith(estado: 'activo');
+          _cliente = _cliente.copyWith(estado: 'A'); // Cambia a 'A'
         });
       }
     } catch (e) {

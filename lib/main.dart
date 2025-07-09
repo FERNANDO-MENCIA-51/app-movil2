@@ -9,12 +9,10 @@ import 'providers/auth_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final authProvider = AuthProvider();
-  await authProvider.loadCurrentUser();
 
   runApp(
     ChangeNotifierProvider(
-      create: (context) => authProvider,
+      create: (context) => AuthProvider(), // No cargues usuario aquí
       child: const MyApp(),
     ),
   );
@@ -33,9 +31,11 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: AppRoutes.onGenerateRoute,
       home: Consumer<AuthProvider>(
         builder: (context, auth, child) {
+          // Siempre muestra la pantalla de login si no hay sesión válida
           return auth.isLoggedIn ? const HomeScreen() : const LoginScreen();
         },
       ),
     );
   }
 }
+

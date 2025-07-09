@@ -46,7 +46,7 @@ class _CompraFormScreenState extends State<CompraFormScreen>
   }
 
   Future<void> _loadProductos() async {
-    final productos = await _productoService.getActiveProductos();
+    final productos = await _productoService.getActiveProductos(context);
     setState(() => _productos = productos);
   }
 

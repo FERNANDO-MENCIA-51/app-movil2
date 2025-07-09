@@ -4,6 +4,8 @@ import '../../data/models/cliente_model.dart';
 
 class ClienteCard extends StatelessWidget {
   final ClienteModel cliente;
+  final String?
+  estadoUi; // <-- Agrega esto para mostrar el estado normalizado (opcional)
   final VoidCallback? onTap;
   final VoidCallback? onView;
   final VoidCallback? onEdit;
@@ -12,6 +14,7 @@ class ClienteCard extends StatelessWidget {
   const ClienteCard({
     super.key,
     required this.cliente,
+    this.estadoUi, // <-- Nuevo parámetro opcional
     this.onTap,
     this.onView,
     this.onEdit,
@@ -66,6 +69,10 @@ class ClienteCard extends StatelessWidget {
   }
 
   Widget _buildHeader() {
+    final bool isActivo = (estadoUi != null)
+        ? (estadoUi == 'activo')
+        : cliente.isActivo;
+
     return Row(
       children: [
         Container(
@@ -73,7 +80,7 @@ class ClienteCard extends StatelessWidget {
           height: 50,
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: cliente.isActivo
+              colors: isActivo
                   ? [AppColors.primary, AppColors.secondary]
                   : [AppColors.error, AppColors.warning],
             ),
@@ -112,15 +119,15 @@ class ClienteCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: cliente.isActivo
+            color: isActivo
                 ? AppColors.success.withValues(alpha: 0.2)
                 : AppColors.error.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            cliente.isActivo ? 'Activo' : 'Inactivo',
+            isActivo ? 'Activo' : 'Inactivo',
             style: TextStyle(
-              color: cliente.isActivo ? AppColors.success : AppColors.error,
+              color: isActivo ? AppColors.success : AppColors.error,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -183,6 +190,10 @@ class ClienteCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons() {
+    final bool isActivo = (estadoUi != null)
+        ? (estadoUi == 'activo')
+        : cliente.isActivo;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -197,13 +208,20 @@ class ClienteCard extends StatelessWidget {
           _ActionButton(
             icon: Icons.edit,
             color: AppColors.primary,
-            onPressed: onEdit!,
+            onPressed:
+                onEdit!, // <-- Asegúrate que este callback navega correctamente
           ),
         if (onEdit != null) const SizedBox(width: 8),
-        if (onDelete != null)
+        if (onDelete != null && isActivo)
           _ActionButton(
-            icon: cliente.isActivo ? Icons.delete : Icons.restore,
-            color: cliente.isActivo ? AppColors.error : AppColors.success,
+            icon: Icons.delete,
+            color: AppColors.error,
+            onPressed: onDelete!,
+          ),
+        if (onDelete != null && !isActivo)
+          _ActionButton(
+            icon: Icons.restore,
+            color: AppColors.success,
             onPressed: onDelete!,
           ),
       ],

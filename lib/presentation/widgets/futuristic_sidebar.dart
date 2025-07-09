@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/constants/colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../providers/auth_provider.dart';
 
 class FuturisticSidebar extends StatefulWidget {
   final String currentRoute;
@@ -74,6 +76,9 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
 
   @override
   Widget build(BuildContext context) {
+    // Obtén el usuario actual desde el AuthProvider
+    final user = Provider.of<AuthProvider>(context, listen: true).currentUser;
+
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
@@ -110,16 +115,10 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
               child: SafeArea(
                 child: Column(
                   children: [
-                    // Header del sidebar
                     _buildSidebarHeader(),
-
                     const SizedBox(height: 30),
-
-                    // Items del menú
                     Expanded(child: _buildMenuItems()),
-
-                    // Footer del sidebar
-                    _buildSidebarFooter(),
+                    _buildSidebarFooter(user),
                   ],
                 ),
               ),
@@ -255,7 +254,13 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => widget.onRouteSelected(item.route),
+          onTap: () {
+            // Solución: Navega usando Navigator si la ruta es diferente a la actual
+            if (item.route != widget.currentRoute) {
+              Navigator.of(context).pop(); // Cierra el drawer
+              Navigator.of(context).pushNamed(item.route);
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -315,7 +320,11 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
     );
   }
 
-  Widget _buildSidebarFooter() {
+  Widget _buildSidebarFooter(dynamic user) {
+    // Usa solo username para mostrar el nombre
+    final String nombre = user?.username ?? 'Usuario';
+    final String rol = user?.rol ?? user?.role ?? 'Sin rol';
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -334,10 +343,8 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
               ),
             ),
           ),
-
           const SizedBox(height: 20),
-
-          // Perfil de usuario
+          // Perfil de usuario dinámico
           Row(
             children: [
               Container(
@@ -355,22 +362,20 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
                   size: 20,
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Admin',
+                      nombre,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
-                      'admin@reposteria.com',
+                      rol,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textHint,
                       ),
@@ -380,9 +385,7 @@ class _FuturisticSidebarState extends State<FuturisticSidebar>
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
           // Botón de cerrar sesión
           Container(
             width: double.infinity,
@@ -433,3 +436,4 @@ class SidebarItem {
 
   SidebarItem({required this.icon, required this.title, required this.route});
 }
+

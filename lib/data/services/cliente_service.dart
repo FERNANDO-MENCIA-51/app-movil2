@@ -1,20 +1,25 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/cliente_model.dart';
+import '../services/auth_service.dart';
 
 class ClienteService {
   // Reemplaza con la URL base de tu backend
-  static const String _baseUrl = 'http://localhost:8080/v1/api/clientes';
-
-  // Headers por defecto
-  static const Map<String, String> _headers = {
-    'Content-Type': 'application/json; charset=UTF-8',
-  };
+  static const String _baseUrl =
+      'http://192.168.0.102:8080/v1/api/clientes'; // Usa tu IP local
+  final AuthService _authService = AuthService();
 
   /// Método para obtener todos los clientes (activos e inactivos)
   Future<List<ClienteModel>> getAllClients() async {
     try {
-      final response = await http.get(Uri.parse(_baseUrl));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse(_baseUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = json.decode(response.body);
@@ -30,7 +35,14 @@ class ClienteService {
   /// Método para obtener solo clientes activos
   Future<List<ClienteModel>> getActiveClients() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/active'));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/active'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = json.decode(response.body);
@@ -48,7 +60,14 @@ class ClienteService {
   /// Método para obtener solo clientes inactivos
   Future<List<ClienteModel>> getInactiveClients() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/inactive'));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/inactive'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = json.decode(response.body);
@@ -66,7 +85,14 @@ class ClienteService {
   /// Método para obtener un cliente por su ID
   Future<ClienteModel?> getClientById(int id) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/$id'));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         return ClienteModel.fromJson(json.decode(response.body));
@@ -83,8 +109,13 @@ class ClienteService {
   /// Método para buscar clientes por nombre
   Future<List<ClienteModel>> searchClientsByName(String query) async {
     try {
+      final token = await _authService.getToken();
       final response = await http.get(
         Uri.parse('$_baseUrl/search?q=${Uri.encodeComponent(query)}'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (response.statusCode == 200) {
@@ -107,9 +138,13 @@ class ClienteService {
         throw Exception('Validation errors: ${errors.join(', ')}');
       }
 
+      final token = await _authService.getToken();
       final response = await http.post(
         Uri.parse(_baseUrl),
-        headers: _headers,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode(client.toJson()),
       );
 
@@ -132,9 +167,13 @@ class ClienteService {
         throw Exception('Validation errors: ${errors.join(', ')}');
       }
 
+      final token = await _authService.getToken();
       final response = await http.put(
         Uri.parse('$_baseUrl/$id'),
-        headers: _headers,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
         body: jsonEncode(client.toJson()),
       );
 
@@ -151,9 +190,24 @@ class ClienteService {
   /// Método para eliminación lógica (cambiar estado a 'I')
   Future<void> deleteLogical(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/delete/$id'));
+      final token = await _authService.getToken();
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/delete/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
-      if (response.statusCode != 204 && response.statusCode != 200) {
+      // Si el backend retorna el cliente actualizado, puedes devolverlo aquí
+      if (response.statusCode == 200) {
+        // Opcional: retorna el cliente actualizado si tu backend lo envía
+        // return ClienteModel.fromJson(json.decode(response.body));
+        return;
+      } else if (response.statusCode == 204) {
+        // Eliminación lógica exitosa sin contenido
+        return;
+      } else {
         throw Exception(
           'Failed to logically delete client: ${response.statusCode}',
         );
@@ -166,9 +220,24 @@ class ClienteService {
   /// Método para restaurar cliente (cambiar estado a 'A')
   Future<void> restoreClient(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/restore/$id'));
+      final token = await _authService.getToken();
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/restore/$id'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
-      if (response.statusCode != 204 && response.statusCode != 200) {
+      // Si el backend retorna el cliente actualizado, puedes devolverlo aquí
+      if (response.statusCode == 200) {
+        // Opcional: retorna el cliente actualizado si tu backend lo envía
+        // return ClienteModel.fromJson(json.decode(response.body));
+        return;
+      } else if (response.statusCode == 204) {
+        // Restauración exitosa sin contenido
+        return;
+      } else {
         throw Exception('Failed to restore client: ${response.statusCode}');
       }
     } catch (e) {
@@ -207,7 +276,14 @@ class ClienteService {
   /// Método para obtener estadísticas de clientes
   Future<Map<String, dynamic>> getClientStats() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/stats'));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/stats'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -240,10 +316,17 @@ class ClienteService {
         queryParams['estado'] = estado;
       }
 
+      final token = await _authService.getToken();
       final uri = Uri.parse(
         '$_baseUrl/paginated',
       ).replace(queryParameters: queryParams);
-      final response = await http.get(uri);
+      final response = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

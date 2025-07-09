@@ -4,6 +4,7 @@ import '../../../data/models/producto_model.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/services/producto_service.dart';
 import '../../../data/services/supplier_service.dart';
+
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/section_header.dart';
 
@@ -617,13 +618,14 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
         await _productoService.updateProducto(
           widget.producto!.productoID!,
           producto,
+          context: context,
         );
         if (mounted) {
           _showSuccessSnackBar('Producto actualizado exitosamente');
           Navigator.pop(context, true);
         }
       } else {
-        await _productoService.createProducto(producto);
+        await _productoService.createProducto(producto, context: context);
         if (mounted) {
           _showSuccessSnackBar('Producto creado exitosamente');
           Navigator.pop(context, true);

@@ -4,10 +4,12 @@ import '../../../data/models/cliente_model.dart';
 import '../../../data/models/producto_model.dart';
 import '../../../data/models/venta_model.dart';
 import '../../../data/models/venta_detalle_model.dart';
+import '../../../data/models/dto/venta_detalle_request_dto.dart';
+import '../../../data/models/dto/venta_request_model.dart';
 import '../../../data/services/cliente_service.dart';
 import '../../../data/services/producto_service.dart';
-import '../../../data/services/venta_service.dart';
-import '../../../data/services/venta_detalle_service.dart';
+import '../../../data/services/venta_transaccion_service.dart';
+
 
 class VentaFormScreen extends StatefulWidget {
   const VentaFormScreen({super.key});
@@ -16,13 +18,12 @@ class VentaFormScreen extends StatefulWidget {
   State<VentaFormScreen> createState() => _VentaFormScreenState();
 }
 
-class _VentaFormScreenState extends State<VentaFormScreen>
-    with TickerProviderStateMixin {
+class _VentaFormScreenState extends State<VentaFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final ClienteService _clienteService = ClienteService();
   final ProductoService _productoService = ProductoService();
-  final VentaService _ventaService = VentaService();
-  final VentaDetalleService _ventaDetalleService = VentaDetalleService();
+  final VentaTransaccionService _ventaTransaccionService =
+      VentaTransaccionService();
 
   List<ClienteModel> _clientes = [];
   List<ProductoModel> _productos = [];
@@ -47,14 +48,12 @@ class _VentaFormScreenState extends State<VentaFormScreen>
   }
 
   Future<void> _loadProductos() async {
-    final productos = await _productoService.getActiveProductos();
+    final productos = await _productoService.getActiveProductos(context);
     setState(() => _productos = productos);
   }
 
   double get subtotal => _carrito.fold(0, (sum, d) => sum + d.subtotal);
-
   double get igv => subtotal * _igv;
-
   double get total => subtotal + igv;
 
   void _addProductoToCarrito() {
@@ -62,11 +61,11 @@ class _VentaFormScreenState extends State<VentaFormScreen>
     if (_carrito.any(
       (d) => d.producto.productoID == _selectedProducto!.productoID,
     )) {
-      _showErrorSnackBar('El producto ya está en el carrito');
+      _showSnackBar('El producto ya está en el carrito', AppColors.error);
       return;
     }
     if (_cantidadProducto > _selectedProducto!.stock) {
-      _showErrorSnackBar('La cantidad supera el stock disponible');
+      _showSnackBar('La cantidad supera el stock disponible', AppColors.error);
       return;
     }
     setState(() {
@@ -83,6 +82,7 @@ class _VentaFormScreenState extends State<VentaFormScreen>
             totalVenta: 0,
             estado: 'activo',
             cliente: _selectedCliente ?? _clientes.first,
+            detalles: [],
           ),
           producto: _selectedProducto!,
         ),
@@ -100,51 +100,47 @@ class _VentaFormScreenState extends State<VentaFormScreen>
 
   Future<void> _saveVenta() async {
     if (_selectedCliente == null || _carrito.isEmpty) {
-      _showErrorSnackBar('Seleccione cliente y agregue productos');
+      _showSnackBar('Seleccione cliente y agregue productos', AppColors.error);
       return;
     }
     setState(() => _isLoading = true);
     try {
-      final venta = VentaModel(
-        ventaID: null,
+      final detalles = _carrito
+          .map(
+            (detalle) => VentaDetalleRequestDTO(
+              productoId: detalle.producto.productoID!,
+              cantidad: detalle.cantidad.toDouble(),
+              precioUnitario: detalle.precioUnitario,
+              subtotal: detalle.subtotal,
+            ),
+          )
+          .toList();
+
+      final ventaRequest = VentaRequestModel(
+        clienteId: _selectedCliente!.clienteID!,
         fechaVenta: DateTime.now(),
         totalVenta: total,
-        estado: 'activo',
-        cliente: _selectedCliente!,
+        detalles: detalles,
       );
-      final ventaCreada = await _ventaService.createVenta(venta);
-      for (final detalle in _carrito) {
-        await _ventaDetalleService.createVentaDetalle(
-          detalle.copyWith(venta: ventaCreada),
-        );
-      }
+
+      await _ventaTransaccionService.registrarVentaCompleta(ventaRequest);
+
       if (mounted) {
-        _showSuccessSnackBar('Venta registrada exitosamente');
+        _showSnackBar('Venta registrada exitosamente', AppColors.success);
         Navigator.pop(context, true);
       }
     } catch (e) {
-      _showErrorSnackBar('Error: $e');
+      _showSnackBar('Error: $e', AppColors.error);
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _showErrorSnackBar(String message) {
+  void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
+        backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -154,134 +150,41 @@ class _VentaFormScreenState extends State<VentaFormScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.backgroundDark,
-              AppColors.surfaceDark,
-              AppColors.cardDark,
-            ],
-          ),
+      appBar: AppBar(
+        title: const Text(
+          'Nueva Venta',
+          style: TextStyle(color: AppColors.textPrimary),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildCustomAppBar(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: _buildForm(),
-                  ),
+        backgroundColor: AppColors.backgroundDark,
+      ),
+      backgroundColor: AppColors.backgroundDark,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildClienteDropdown(),
+                const SizedBox(height: 20),
+                _buildProductoSelector(),
+                const SizedBox(height: 20),
+                _buildCarrito(),
+                const SizedBox(height: 20),
+                _buildResumen(),
+                const SizedBox(height: 30),
+                Row(
+                  children: [
+                    Expanded(child: _buildCancelButton()),
+                    const SizedBox(width: 15),
+                    Expanded(child: _buildSaveButton()),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCustomAppBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.surfaceDark.withValues(alpha: 0.8),
-            AppColors.cardDark.withValues(alpha: 0.6),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primary.withValues(alpha: 0.2),
-                  AppColors.secondary.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(
-                Icons.arrow_back,
-                color: AppColors.primary,
-                size: 24,
-              ),
+              ],
             ),
           ),
-          const SizedBox(width: 15),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Nueva Venta',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Registrar venta y detalle',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-          const Spacer(),
-          if (_isLoading)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: AppColors.primary,
-                strokeWidth: 2,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 10),
-          _buildClienteDropdown(),
-          const SizedBox(height: 20),
-          _buildProductoSelector(),
-          const SizedBox(height: 20),
-          _buildCarrito(),
-          const SizedBox(height: 20),
-          _buildResumen(),
-          const SizedBox(height: 30),
-          Row(
-            children: [
-              Expanded(child: _buildCancelButton()),
-              const SizedBox(width: 15),
-              Expanded(child: _buildSaveButton()),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }

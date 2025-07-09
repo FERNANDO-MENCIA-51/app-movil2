@@ -1,30 +1,46 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/venta_model.dart';
+import '../services/auth_service.dart';
 
 class VentaService {
-  static const String _baseUrl = 'http://localhost:8080/v1/api/ventas';
-  static const Map<String, String> _headers = {
-    'Content-Type': 'application/json; charset=UTF-8',
-  };
+  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/ventas';
+  final AuthService _authService = AuthService();
 
   Future<List<VentaModel>> getAllVentas() async {
-    final response = await http.get(Uri.parse(_baseUrl));
+    final token = await _authService.getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/all'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+    // ...elimina los print para evitar advertencias en producción...
     if (response.statusCode == 200) {
       final List jsonResponse = json.decode(response.body);
       return jsonResponse.map((item) => VentaModel.fromJson(item)).toList();
     } else {
-      throw Exception('Failed to load ventas');
+      throw Exception(
+        'Failed to load ventas (${response.statusCode}): ${response.body}',
+      );
     }
   }
 
   Future<List<VentaModel>> getActiveVentas() async {
-    final response = await http.get(Uri.parse('$_baseUrl/active'));
+    final token = await _authService.getToken();
+    final response = await http.get(
+      Uri.parse('$_baseUrl/active'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
     if (response.statusCode == 200) {
       final List jsonResponse = json.decode(response.body);
       return jsonResponse.map((item) => VentaModel.fromJson(item)).toList();
     } else {
-      throw Exception('Failed to load active ventas');
+      throw Exception('Failed to load active ventas: ${response.statusCode}');
     }
   }
 
@@ -52,7 +68,7 @@ class VentaService {
   Future<VentaModel> createVenta(VentaModel venta) async {
     final response = await http.post(
       Uri.parse(_baseUrl),
-      headers: _headers,
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode(venta.toJson()),
     );
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -65,7 +81,7 @@ class VentaService {
   Future<VentaModel> updateVenta(int id, VentaModel venta) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/$id'),
-      headers: _headers,
+      headers: {'Content-Type': 'application/json; charset=UTF-8'},
       body: jsonEncode(venta.toJson()),
     );
     if (response.statusCode == 200) {
@@ -89,3 +105,4 @@ class VentaService {
     }
   }
 }
+

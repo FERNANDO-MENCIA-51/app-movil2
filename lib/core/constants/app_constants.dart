@@ -30,8 +30,17 @@ class AppConstants {
   static const String clienteFormRoute = '/cliente-form';
   static const String clienteDetailRoute = '/cliente-detail';
   static const String productosRoute = '/productos';
-  static const String pedidosRoute = '/pedidos';
-  static const String inventarioRoute = '/inventario';
-  static const String reportesRoute = '/reportes';
-  static const String configuracionRoute = '/configuracion';
+  static const String productoFormRoute = '/producto-form';
+  static const String productoDetailRoute = '/producto-detail';
+  static const String comprasRoute = '/compras';
+  static const String compraFormRoute = '/compra-form';
+  static const String compraDetailRoute = '/compra-detail';
+  static const String ventasRoute = '/ventas';
+  static const String ventaFormRoute = '/venta-form';
+  static const String ventaDetailRoute = '/venta-detail';
+  static const String suppliersRoute = '/suppliers';
+  static const String supplierFormRoute = '/supplier-form';
+  static const String supplierDetailRoute = '/supplier-detail';
+
+  static const String settingsRoute = '/settings';
 }

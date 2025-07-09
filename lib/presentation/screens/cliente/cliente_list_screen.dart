@@ -81,6 +81,8 @@ class _ClienteListScreenState extends State<ClienteListScreen>
           clientes = await _clienteService.getAllClients();
       }
 
+      // Normaliza el estado para la UI (A/I a activo/inactivo)
+      // Si 'estado' es final, no puedes asignar. Usa una variable local para mostrar el estado en la UI.
       setState(() {
         _clientes = clientes;
         _filteredClientes = clientes;
@@ -320,14 +322,12 @@ class _ClienteListScreenState extends State<ClienteListScreen>
 
               const SizedBox(height: 15),
 
-              // Filtros de tipo de documento
+              // Filtros de tipo de documento (solo DNI y CE)
               Row(
                 children: [
                   Expanded(child: _buildDocumentFilterChip('Todos', 'todos')),
                   const SizedBox(width: 8),
                   Expanded(child: _buildDocumentFilterChip('DNI', 'DNI')),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildDocumentFilterChip('RUC', 'RUC')),
                   const SizedBox(width: 8),
                   Expanded(child: _buildDocumentFilterChip('CE', 'CE')),
                 ],
@@ -414,6 +414,15 @@ class _ClienteListScreenState extends State<ClienteListScreen>
   }
 
   Widget _buildClientStats() {
+    // Cuenta activos/inactivos según el estado real (A/I)
+    final int total = _filteredClientes.length;
+    final int activos = _filteredClientes
+        .where((c) => c.estado.toUpperCase() == 'A')
+        .length;
+    final int inactivos = _filteredClientes
+        .where((c) => c.estado.toUpperCase() == 'I')
+        .length;
+
     return SlideTransition(
       position: _slideAnimation,
       child: FadeTransition(
@@ -439,17 +448,9 @@ class _ClienteListScreenState extends State<ClienteListScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Total', _clientes.length, Icons.group),
-              _buildStatItem(
-                'Activos',
-                _clientes.where((c) => c.isActivo).length,
-                Icons.check_circle,
-              ),
-              _buildStatItem(
-                'Inactivos',
-                _clientes.where((c) => !c.isActivo).length,
-                Icons.cancel,
-              ),
+              _buildStatItem('Total', total, Icons.group),
+              _buildStatItem('Activos', activos, Icons.check_circle),
+              _buildStatItem('Inactivos', inactivos, Icons.cancel),
             ],
           ),
         ),
@@ -498,6 +499,12 @@ class _ClienteListScreenState extends State<ClienteListScreen>
           itemCount: _filteredClientes.length,
           itemBuilder: (context, index) {
             final cliente = _filteredClientes[index];
+            final String estadoUi = (cliente.estado.toUpperCase() == 'A')
+                ? 'activo'
+                : (cliente.estado.toUpperCase() == 'I')
+                ? 'inactivo'
+                : cliente.estado;
+
             return TweenAnimationBuilder<double>(
               duration: Duration(milliseconds: 300 + (index * 100)),
               tween: Tween(begin: 0.0, end: 1.0),
@@ -508,6 +515,7 @@ class _ClienteListScreenState extends State<ClienteListScreen>
                     opacity: value,
                     child: ClienteCard(
                       cliente: cliente,
+                      estadoUi: estadoUi,
                       onTap: () {
                         AppRoutes.navigateToClienteDetail(context, cliente);
                       },
@@ -515,6 +523,7 @@ class _ClienteListScreenState extends State<ClienteListScreen>
                         AppRoutes.navigateToClienteDetail(context, cliente);
                       },
                       onEdit: () {
+                        // Usa la ruta correcta para el formulario de cliente
                         AppRoutes.navigateToClienteForm(
                           context,
                           cliente: cliente,
@@ -588,16 +597,17 @@ class _ClienteListScreenState extends State<ClienteListScreen>
   }
 
   void _showDeleteRestoreDialog(ClienteModel cliente) {
+    final bool isActivo = (cliente.estado.toUpperCase() == 'A');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
         title: Text(
-          cliente.isActivo ? 'Eliminar Cliente' : 'Restaurar Cliente',
+          isActivo ? 'Eliminar Cliente' : 'Restaurar Cliente',
           style: const TextStyle(color: AppColors.textPrimary),
         ),
         content: Text(
-          cliente.isActivo
+          isActivo
               ? '¿Estás seguro de que deseas eliminar a ${cliente.nombreCompleto}?'
               : '¿Estás seguro de que deseas restaurar a ${cliente.nombreCompleto}?',
           style: const TextStyle(color: AppColors.textSecondary),
@@ -616,12 +626,10 @@ class _ClienteListScreenState extends State<ClienteListScreen>
               _deleteOrRestoreClient(cliente);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: cliente.isActivo
-                  ? AppColors.error
-                  : AppColors.success,
+              backgroundColor: isActivo ? AppColors.error : AppColors.success,
             ),
             child: Text(
-              cliente.isActivo ? 'Eliminar' : 'Restaurar',
+              isActivo ? 'Eliminar' : 'Restaurar',
               style: const TextStyle(color: AppColors.textPrimary),
             ),
           ),
@@ -632,14 +640,15 @@ class _ClienteListScreenState extends State<ClienteListScreen>
 
   Future<void> _deleteOrRestoreClient(ClienteModel cliente) async {
     try {
-      if (cliente.isActivo) {
+      if (cliente.estado.toUpperCase() == 'A') {
         await _clienteService.deleteLogical(cliente.clienteID!);
         _showSuccessSnackBar('Cliente eliminado exitosamente');
       } else {
         await _clienteService.restoreClient(cliente.clienteID!);
         _showSuccessSnackBar('Cliente restaurado exitosamente');
       }
-      _loadClientes();
+      // Recarga la lista desde el backend para asegurar consistencia
+      await _loadClientes();
     } catch (e) {
       _showErrorSnackBar('Error: $e');
     }

@@ -13,6 +13,9 @@ class AuthProvider with ChangeNotifier {
   LoginResponseModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
 
+  // Agrega un getter para el token JWT
+  String? get token => _currentUser?.token;
+
   Future<void> loadCurrentUser() async {
     String? token = await _authService.getToken();
     String? username = await _authService.getUsername();
