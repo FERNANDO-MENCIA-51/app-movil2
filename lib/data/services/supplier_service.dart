@@ -5,7 +5,7 @@ import '../services/auth_service.dart';
 
 class SupplierService {
   // Reemplaza con la URL base de tu backend
-  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/suppliers';
+  static const String _baseUrl = 'http://192.168.0.106:8080/v1/api/suppliers';
   final AuthService _authService = AuthService();
 
   // Headers por defecto
@@ -16,7 +16,14 @@ class SupplierService {
   /// Método para obtener todos los proveedores (activos e inactivos)
   Future<List<SupplierModel>> getAllSuppliers() async {
     try {
-      final response = await http.get(Uri.parse(_baseUrl));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse(_baseUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = json.decode(response.body);
@@ -54,7 +61,14 @@ class SupplierService {
   /// Método para obtener solo proveedores inactivos
   Future<List<SupplierModel>> getInactiveSuppliers() async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/inactive'));
+      final token = await _authService.getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/inactive'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = json.decode(response.body);
@@ -117,9 +131,10 @@ class SupplierService {
         throw Exception('Validation errors: ${errors.join(', ')}');
       }
 
+      final token = await _authService.getToken();
       final response = await http.post(
         Uri.parse(_baseUrl),
-        headers: _headers,
+        headers: {..._headers, 'Authorization': 'Bearer $token'},
         body: jsonEncode(supplier.toJson()),
       );
 
@@ -142,9 +157,10 @@ class SupplierService {
         throw Exception('Validation errors: ${errors.join(', ')}');
       }
 
+      final token = await _authService.getToken();
       final response = await http.put(
         Uri.parse('$_baseUrl/$id'),
-        headers: _headers,
+        headers: {..._headers, 'Authorization': 'Bearer $token'},
         body: jsonEncode(supplier.toJson()),
       );
 
@@ -161,7 +177,11 @@ class SupplierService {
   /// Método para eliminación lógica (cambiar estado a 'inactivo')
   Future<void> deleteLogicalSupplier(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/delete/$id'));
+      final token = await _authService.getToken();
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/delete/$id'),
+        headers: {..._headers, 'Authorization': 'Bearer $token'},
+      );
 
       if (response.statusCode != 204 && response.statusCode != 200) {
         throw Exception(
@@ -176,7 +196,11 @@ class SupplierService {
   /// Método para restaurar proveedor (cambiar estado a 'activo')
   Future<void> restoreSupplier(int id) async {
     try {
-      final response = await http.patch(Uri.parse('$_baseUrl/restore/$id'));
+      final token = await _authService.getToken();
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/restore/$id'),
+        headers: {..._headers, 'Authorization': 'Bearer $token'},
+      );
 
       if (response.statusCode != 204 && response.statusCode != 200) {
         throw Exception('Failed to restore supplier: ${response.statusCode}');

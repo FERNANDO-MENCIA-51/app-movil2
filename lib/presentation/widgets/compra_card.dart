@@ -5,17 +5,15 @@ import '../../data/models/compra_model.dart';
 class CompraCard extends StatelessWidget {
   final CompraModel compra;
   final VoidCallback? onTap;
-  final VoidCallback? onView;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
-  final VoidCallback? onRestore;
 
   const CompraCard({
     super.key,
     required this.compra,
     this.onTap,
-    this.onView,
+    this.onEdit,
     this.onDelete,
-    this.onRestore,
   });
 
   @override
@@ -91,16 +89,18 @@ class CompraCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                compra.supplier.nombre,
+                compra.supplier.name,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
-                'Fecha: ${compra.fechaFormateada}',
+                'RUC: ${compra.supplier.ruc}',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
@@ -109,51 +109,101 @@ class CompraCard extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: compra.isActivo
-                ? AppColors.success.withValues(alpha: 0.2)
-                : AppColors.error.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            compra.isActivo ? 'Activo' : 'Inactivo',
-            style: TextStyle(
-              color: compra.isActivo ? AppColors.success : AppColors.error,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: compra.estado.toUpperCase() == 'A'
+                    ? AppColors.success.withValues(alpha: 0.2)
+                    : AppColors.error.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                compra.estado.toUpperCase() == 'A' ? 'Activo' : 'Inactivo',
+                style: TextStyle(
+                  color: compra.estado.toUpperCase() == 'A'
+                      ? AppColors.success
+                      : AppColors.error,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
   }
 
   Widget _buildCompraInfo() {
-    return Row(
+    return Column(
       children: [
-        const Icon(Icons.attach_money, color: AppColors.textHint, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          'Total: S/ ${compra.totalCompra.toStringAsFixed(2)}',
-          style: const TextStyle(
-            color: AppColors.secondary,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          children: [
+            const Icon(
+              Icons.calendar_today,
+              color: AppColors.textHint,
+              size: 14,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Fecha: ${compra.fechaFormateada}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.shopping_bag, color: AppColors.textHint, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'Cant: ${compra.cantidad}',
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-        const Spacer(),
-        const Icon(Icons.info_outline, color: AppColors.textHint, size: 14),
-        const SizedBox(width: 6),
-        Text(
-          compra.estado,
-          style: TextStyle(
-            color: compra.isActivo ? AppColors.success : AppColors.error,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(Icons.attach_money, color: AppColors.textHint, size: 14),
+            const SizedBox(width: 6),
+            Text(
+              'Total: S/ ${compra.totalCompra.toStringAsFixed(2)}',
+              style: const TextStyle(
+                color: AppColors.secondary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            const Spacer(),
+            if (compra.observaciones != null &&
+                compra.observaciones!.isNotEmpty)
+              Row(
+                children: [
+                  const Icon(
+                    Icons.info_outline,
+                    color: AppColors.textHint,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    compra.observaciones!,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+          ],
         ),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -162,24 +212,22 @@ class CompraCard extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (onView != null)
+        if (onEdit != null)
           _ActionButton(
-            icon: Icons.visibility,
-            color: AppColors.info,
-            onPressed: onView!,
+            icon: Icons.edit,
+            color: AppColors.primary,
+            onPressed: onEdit!,
           ),
-        if (onView != null) const SizedBox(width: 8),
-        if (compra.isActivo && onDelete != null)
+        if (onEdit != null) const SizedBox(width: 8),
+        if (onDelete != null)
           _ActionButton(
-            icon: Icons.delete,
-            color: AppColors.error,
+            icon: compra.estado.toUpperCase() == 'A'
+                ? Icons.delete
+                : Icons.restore,
+            color: compra.estado.toUpperCase() == 'A'
+                ? AppColors.error
+                : AppColors.success,
             onPressed: onDelete!,
-          ),
-        if (!compra.isActivo && onRestore != null)
-          _ActionButton(
-            icon: Icons.restore,
-            color: AppColors.success,
-            onPressed: onRestore!,
           ),
       ],
     );

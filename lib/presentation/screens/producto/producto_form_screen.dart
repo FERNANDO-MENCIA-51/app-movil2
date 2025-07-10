@@ -33,7 +33,6 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
   final _stockController = TextEditingController();
 
   String _selectedCategoria = 'Pasteles';
-  String _selectedEstatus = 'activo';
   SupplierModel? _selectedSupplier;
   List<SupplierModel> _suppliers = [];
   bool _isLoading = false;
@@ -44,12 +43,17 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
   late Animation<Offset> _slideAnimation;
 
   final List<String> _categorias = [
+    'Keke',
+    'Chocotorta',
+    'Chupcake',
+    'Pie',
+    'Torta Helada',
+    'Brownie',
     'Pasteles',
-    'Ingredientes',
-    'Decoración',
-    'Herramientas',
+    'Repostero',
+    'Pastelería',
+    // Agrega aquí más categorías específicas de repostería si lo deseas
   ];
-  final List<String> _estatusOptions = ['activo', 'inactivo'];
 
   @override
   void initState() {
@@ -102,8 +106,12 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
       _codeBarraController.text = producto.codeBarra ?? '';
       _precioVentaController.text = producto.precioVenta.toString();
       _stockController.text = producto.stock.toString();
-      _selectedCategoria = producto.categoria ?? 'Pasteles';
-      _selectedEstatus = producto.estatus;
+      // Asegura que la categoría esté en la lista, si no, usa 'Pasteles'
+      if (_categorias.contains(producto.categoria)) {
+        _selectedCategoria = producto.categoria!;
+      } else {
+        _selectedCategoria = 'Pasteles';
+      }
       _selectedSupplier = producto.supplier;
     }
   }
@@ -353,21 +361,6 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
 
               _buildSupplierDropdown(),
 
-              const SizedBox(height: 30),
-
-              SectionHeader(title: 'Estado', icon: Icons.settings),
-              const SizedBox(height: 20),
-
-              _buildDropdownField(
-                value: _selectedEstatus,
-                items: _estatusOptions,
-                label: 'Estado del Producto',
-                icon: Icons.toggle_on,
-                onChanged: (value) {
-                  setState(() => _selectedEstatus = value!);
-                },
-              ),
-
               const SizedBox(height: 40),
 
               Row(
@@ -414,7 +407,9 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
               (item) => DropdownMenuItem(
                 value: item,
                 child: Text(
-                  item,
+                  label == 'Estado del Producto'
+                      ? (item == 'A' ? 'Activo' : 'Inactivo')
+                      : item,
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ),
@@ -482,7 +477,7 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
               (supplier) => DropdownMenuItem(
                 value: supplier,
                 child: Text(
-                  supplier.nombre,
+                  supplier.name,
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ),
@@ -609,7 +604,7 @@ class _ProductoFormScreenState extends State<ProductoFormScreen>
         categoria: _selectedCategoria,
         precioVenta: double.parse(_precioVentaController.text.trim()),
         stock: int.parse(_stockController.text.trim()),
-        estatus: _selectedEstatus,
+        estatus: 'A', // Siempre por defecto 'A'
         fechaIngreso: widget.producto?.fechaIngreso ?? DateTime.now(),
         supplier: _selectedSupplier!,
       );

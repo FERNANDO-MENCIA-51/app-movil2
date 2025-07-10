@@ -5,7 +5,6 @@ import '../../data/models/supplier_model.dart';
 class SupplierCard extends StatelessWidget {
   final SupplierModel supplier;
   final VoidCallback? onTap;
-  final VoidCallback? onView;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
@@ -13,7 +12,6 @@ class SupplierCard extends StatelessWidget {
     super.key,
     required this.supplier,
     this.onTap,
-    this.onView,
     this.onEdit,
     this.onDelete,
   });
@@ -55,7 +53,7 @@ class SupplierCard extends StatelessWidget {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 12),
-                _buildContactInfo(),
+                _buildSupplierInfo(),
                 _buildActionButtons(),
               ],
             ),
@@ -91,103 +89,96 @@ class SupplierCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                supplier.nombre,
+                supplier.name,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
-              if (supplier.contacto != null)
-                Text(
-                  'Contacto: ${supplier.contacto}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+              Text(
+                'RUC: ${supplier.ruc}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
                 ),
+              ),
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: supplier.isActivo
-                ? AppColors.success.withValues(alpha: 0.2)
-                : AppColors.error.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            supplier.isActivo ? 'Activo' : 'Inactivo',
-            style: TextStyle(
-              color: supplier.isActivo ? AppColors.success : AppColors.error,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: supplier.isActivo
+                    ? AppColors.success.withValues(alpha: 0.2)
+                    : AppColors.error.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                supplier.isActivo ? 'Activo' : 'Inactivo',
+                style: TextStyle(
+                  color: supplier.isActivo
+                      ? AppColors.success
+                      : AppColors.error,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildContactInfo() {
-    final List<Widget> contactWidgets = [];
-
-    if (supplier.email != null && supplier.email!.isNotEmpty) {
-      contactWidgets.add(
+  Widget _buildSupplierInfo() {
+    return Column(
+      children: [
         Row(
           children: [
             const Icon(Icons.email, color: AppColors.textHint, size: 14),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                supplier.email!,
+                supplier.email,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ],
-        ),
-      );
-    }
-
-    if (supplier.telefono != null && supplier.telefono!.isNotEmpty) {
-      if (contactWidgets.isNotEmpty) {
-        contactWidgets.add(const SizedBox(height: 4));
-      }
-      contactWidgets.add(
-        Row(
-          children: [
-            const Icon(Icons.phone, color: AppColors.textHint, size: 14),
-            const SizedBox(width: 6),
-            Text(
-              supplier.telefono!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
+            const SizedBox(width: 10),
+            if (supplier.phone != null && supplier.phone!.isNotEmpty)
+              Row(
+                children: [
+                  const Icon(Icons.phone, color: AppColors.textHint, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    supplier.phone!,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
-            ),
           ],
         ),
-      );
-    }
-
-    if (supplier.direccion != null && supplier.direccion!.isNotEmpty) {
-      if (contactWidgets.isNotEmpty) {
-        contactWidgets.add(const SizedBox(height: 4));
-      }
-      contactWidgets.add(
+        const SizedBox(height: 8),
         Row(
           children: [
             const Icon(Icons.location_on, color: AppColors.textHint, size: 14),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                supplier.direccion!,
+                supplier.address,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,
@@ -197,27 +188,15 @@ class SupplierCard extends StatelessWidget {
             ),
           ],
         ),
-      );
-    }
-
-    if (contactWidgets.isNotEmpty) {
-      contactWidgets.add(const SizedBox(height: 12));
-    }
-
-    return Column(children: contactWidgets);
+        const SizedBox(height: 12),
+      ],
+    );
   }
 
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        if (onView != null)
-          _ActionButton(
-            icon: Icons.visibility,
-            color: AppColors.info,
-            onPressed: onView!,
-          ),
-        if (onView != null) const SizedBox(width: 8),
         if (onEdit != null)
           _ActionButton(
             icon: Icons.edit,
@@ -225,10 +204,16 @@ class SupplierCard extends StatelessWidget {
             onPressed: onEdit!,
           ),
         if (onEdit != null) const SizedBox(width: 8),
-        if (onDelete != null)
+        if (onDelete != null && supplier.isActivo)
           _ActionButton(
-            icon: supplier.isActivo ? Icons.delete : Icons.restore,
-            color: supplier.isActivo ? AppColors.error : AppColors.success,
+            icon: Icons.delete,
+            color: AppColors.error,
+            onPressed: onDelete!,
+          ),
+        if (onDelete != null && !supplier.isActivo)
+          _ActionButton(
+            icon: Icons.restore,
+            color: AppColors.success,
             onPressed: onDelete!,
           ),
       ],

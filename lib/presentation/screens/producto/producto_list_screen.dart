@@ -6,6 +6,7 @@ import '../../widgets/futuristic_sidebar.dart';
 import '../../widgets/producto_card.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/constants/app_constants.dart';
+import 'producto_form_screen.dart';
 
 class ProductoListScreen extends StatefulWidget {
   const ProductoListScreen({super.key});
@@ -23,8 +24,22 @@ class _ProductoListScreenState extends State<ProductoListScreen>
   List<ProductoModel> _productos = [];
   List<ProductoModel> _filteredProductos = [];
   bool _isLoading = true;
-  String _selectedFilter = 'todos';
+  String _selectedFilter = 'todos'; // 'todos', 'A', 'I', 'stock_bajo'
   String _selectedCategoryFilter = 'todos';
+
+  // Lista de categorías disponibles (debe coincidir con las del formulario)
+  final List<String> _categoriasDisponibles = [
+    'todos',
+    'Keke',
+    'Chocotorta',
+    'Chupcake',
+    'Pie',
+    'Torta Helada',
+    'Brownie',
+    'Pasteles',
+    'Repostero',
+    'Pastelería',
+  ];
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -71,15 +86,16 @@ class _ProductoListScreenState extends State<ProductoListScreen>
 
       List<ProductoModel> productos;
       switch (_selectedFilter) {
-        case 'activos':
+        case 'A':
           productos = await _productoService.getActiveProductos(context);
           break;
-        case 'inactivos':
+        case 'I':
           productos = await _productoService.getInactiveProductos(context);
           break;
-        case 'stock_bajo':
-          productos = await _productoService.getLowStockProductos(context);
-          break;
+        // Elimina el filtro de stock bajo para evitar el error 401
+        // case 'stock_bajo':
+        //   productos = await _productoService.getLowStockProductos(context);
+        //   break;
         default:
           productos = await _productoService.getAllProductos(context);
       }
@@ -314,34 +330,73 @@ class _ProductoListScreenState extends State<ProductoListScreen>
                 children: [
                   Expanded(child: _buildFilterChip('Todos', 'todos')),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildFilterChip('Activos', 'activos')),
+                  Expanded(child: _buildFilterChip('Activos', 'A')),
                   const SizedBox(width: 8),
-                  Expanded(child: _buildFilterChip('Inactivos', 'inactivos')),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildFilterChip('Stock Bajo', 'stock_bajo')),
+                  Expanded(child: _buildFilterChip('Inactivos', 'I')),
                 ],
               ),
-
               const SizedBox(height: 15),
-
-              // Filtros de categoría
+              // Filtro de categoría como DropdownButton
               Row(
                 children: [
-                  Expanded(child: _buildCategoryFilterChip('Todas', 'todos')),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildCategoryFilterChip('Pasteles', 'Pasteles'),
+                  const Icon(
+                    Icons.category,
+                    color: AppColors.primary,
+                    size: 20,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: _buildCategoryFilterChip(
-                      'Ingredientes',
-                      'Ingredientes',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.surfaceDark.withValues(alpha: 0.5),
+                            AppColors.cardDark.withValues(alpha: 0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.border.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: DropdownButton<String>(
+                        value: _selectedCategoryFilter,
+                        isExpanded: true,
+                        dropdownColor: AppColors.cardDark,
+                        icon: const Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.primary,
+                        ),
+                        underline: const SizedBox(),
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        items: _categoriasDisponibles
+                            .map(
+                              (cat) => DropdownMenuItem<String>(
+                                value: cat,
+                                child: Text(
+                                  cat == 'todos' ? 'Todas las categorías' : cat,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: cat == _selectedCategoryFilter
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedCategoryFilter = value!;
+                            _filterProductos(_searchController.text);
+                          });
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _buildCategoryFilterChip('Decoración', 'Decoración'),
                   ),
                 ],
               ),
@@ -389,43 +444,6 @@ class _ProductoListScreenState extends State<ProductoListScreen>
     );
   }
 
-  Widget _buildCategoryFilterChip(String label, String value) {
-    final isSelected = _selectedCategoryFilter == value;
-    return GestureDetector(
-      onTap: () {
-        setState(() => _selectedCategoryFilter = value);
-        _filterProductos(_searchController.text);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [AppColors.accent, AppColors.info],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                )
-              : null,
-          color: isSelected ? null : AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? Colors.transparent : AppColors.border,
-            width: 1,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 10,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
-
   Widget _buildProductStats() {
     return SlideTransition(
       position: _slideAnimation,
@@ -459,6 +477,11 @@ class _ProductoListScreenState extends State<ProductoListScreen>
                 Icons.check_circle,
               ),
               _buildStatItem(
+                'Inactivos',
+                _productos.where((p) => !p.isActivo).length,
+                Icons.cancel,
+              ),
+              _buildStatItem(
                 'Stock Bajo',
                 _productos.where((p) => p.isStockBajo && p.isActivo).length,
                 Icons.warning,
@@ -479,6 +502,8 @@ class _ProductoListScreenState extends State<ProductoListScreen>
     Color iconColor = AppColors.primary;
     if (label == 'Stock Bajo') iconColor = AppColors.warning;
     if (label == 'Sin Stock') iconColor = AppColors.error;
+    if (label == 'Inactivos')
+      iconColor = AppColors.error; // <- Corrige color a rojo
 
     return Column(
       children: [
@@ -494,7 +519,13 @@ class _ProductoListScreenState extends State<ProductoListScreen>
         ),
         Text(
           label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
+          style: TextStyle(
+            color: label == 'Inactivos'
+                ? AppColors
+                      .error // <- Texto rojo para inactivos
+                : AppColors.textSecondary,
+            fontSize: 10,
+          ),
         ),
       ],
     );
@@ -530,9 +561,22 @@ class _ProductoListScreenState extends State<ProductoListScreen>
                     opacity: value,
                     child: ProductoCard(
                       producto: producto,
-                      onTap: () {},
-                      onView: () {},
-                      onEdit: () {},
+                      onTap:
+                          () {}, // Puedes dejarlo vacío o usar para ver detalle
+                      onView:
+                          () {}, // Puedes dejarlo vacío o usar para ver detalle
+                      onEdit: () {
+                        // Abre el formulario de edición de producto
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductoFormScreen(
+                              producto: producto,
+                              isEditing: true,
+                            ),
+                          ),
+                        );
+                      },
                       onDelete: () {
                         _showDeleteRestoreDialog(producto);
                       },
@@ -594,7 +638,18 @@ class _ProductoListScreenState extends State<ProductoListScreen>
         ],
       ),
       child: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          // Abre el formulario para crear un nuevo producto
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductoFormScreen(isEditing: false),
+            ),
+          ).then((value) {
+            // Recarga la lista si se creó un producto
+            if (value == true) _loadProductos();
+          });
+        },
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: const Icon(Icons.add, color: AppColors.textPrimary, size: 28),

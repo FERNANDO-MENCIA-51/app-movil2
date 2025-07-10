@@ -390,18 +390,25 @@ class _ProductoDetailScreenState extends State<ProductoDetailScreen>
       title: 'Información del Proveedor',
       icon: Icons.business,
       children: [
-        _buildInfoRow('Nombre', _producto.supplier.nombre, Icons.business),
-        if (_producto.supplier.contacto != null)
-          _buildInfoRow('Contacto', _producto.supplier.contacto!, Icons.person),
-        if (_producto.supplier.hasTelefono)
-          _buildInfoRow('Teléfono', _producto.supplier.telefono!, Icons.phone),
-        if (_producto.supplier.hasValidEmail)
-          _buildInfoRow('Email', _producto.supplier.email!, Icons.email),
+        _buildInfoRow('Nombre', _producto.supplier.name, Icons.business),
+        _buildInfoRow('RUC', _producto.supplier.ruc, Icons.confirmation_number),
+        if (_producto.supplier.phone != null &&
+            _producto.supplier.phone!.isNotEmpty)
+          _buildInfoRow('Teléfono', _producto.supplier.phone!, Icons.phone),
+        if (_producto.supplier.email.isNotEmpty)
+          _buildInfoRow('Email', _producto.supplier.email, Icons.email),
+        _buildInfoRow(
+          'Dirección',
+          _producto.supplier.address,
+          Icons.location_on,
+        ),
         _buildInfoRow(
           'Estado',
-          _producto.supplier.estado.toUpperCase(),
-          _producto.supplier.isActivo ? Icons.check_circle : Icons.cancel,
-          color: _producto.supplier.isActivo
+          _producto.supplier.estatus.toUpperCase(),
+          _producto.supplier.estatus.toUpperCase() == 'A'
+              ? Icons.check_circle
+              : Icons.cancel,
+          color: _producto.supplier.estatus.toUpperCase() == 'A'
               ? AppColors.success
               : AppColors.error,
         ),
@@ -502,7 +509,9 @@ class _ProductoDetailScreenState extends State<ProductoDetailScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  value,
+                  label == 'Estado'
+                      ? (value == 'A' ? 'Activo' : 'Inactivo')
+                      : value,
                   style: TextStyle(
                     color: color ?? AppColors.textPrimary,
                     fontSize: 14,

@@ -1,136 +1,113 @@
 class SupplierModel {
   final int? supplierID;
-  final String nombre;
-  final String? contacto;
-  final String? telefono;
-  final String? email;
-  final String? direccion;
-  final String estado;
+  final String name;
+  final String ruc;
+  final String email;
+  final String? phone;
+  final String address;
+  final String estatus; // 'A' o 'I'
 
   SupplierModel({
     this.supplierID,
-    required this.nombre,
-    this.contacto,
-    this.telefono,
-    this.email,
-    this.direccion,
-    required this.estado,
+    required this.name,
+    required this.ruc,
+    required this.email,
+    this.phone,
+    required this.address,
+    required this.estatus,
   });
 
-  /// Crear instancia desde JSON
   factory SupplierModel.fromJson(Map<String, dynamic> json) {
     return SupplierModel(
       supplierID: json['supplierID'] as int?,
-      nombre: json['nombre'] as String,
-      contacto: json['contacto'] as String?,
-      telefono: json['telefono'] as String?,
-      email: json['email'] as String?,
-      direccion: json['direccion'] as String?,
-      estado: json['estado'] as String,
+      name: json['name'] as String,
+      ruc: json['ruc'] as String,
+      email: json['email'] as String,
+      phone: json['phone'] as String?,
+      address: json['address'] as String,
+      estatus: json['estatus'] as String,
     );
   }
 
-  /// Convertir a JSON
   Map<String, dynamic> toJson() {
     return {
       'supplierID': supplierID,
-      'nombre': nombre,
-      'contacto': contacto,
-      'telefono': telefono,
+      'name': name,
+      'ruc': ruc,
       'email': email,
-      'direccion': direccion,
-      'estado': estado,
+      'phone': phone,
+      'address': address,
+      'estatus': estatus,
     };
   }
 
-  /// Crear copia con modificaciones
   SupplierModel copyWith({
     int? supplierID,
-    String? nombre,
-    String? contacto,
-    String? telefono,
+    String? name,
+    String? ruc,
     String? email,
-    String? direccion,
-    String? estado,
+    String? phone,
+    String? address,
+    String? estatus,
   }) {
     return SupplierModel(
       supplierID: supplierID ?? this.supplierID,
-      nombre: nombre ?? this.nombre,
-      contacto: contacto ?? this.contacto,
-      telefono: telefono ?? this.telefono,
+      name: name ?? this.name,
+      ruc: ruc ?? this.ruc,
       email: email ?? this.email,
-      direccion: direccion ?? this.direccion,
-      estado: estado ?? this.estado,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      estatus: estatus ?? this.estatus,
     );
   }
 
-  /// Verificar si el proveedor está activo
-  bool get isActivo => estado.toLowerCase() == 'activo';
+  bool get isActivo => estatus.toUpperCase() == 'A';
 
-  /// Verificar si tiene email válido
-  bool get hasValidEmail => email != null && email!.contains('@');
-
-  /// Verificar si tiene teléfono
-  bool get hasTelefono => telefono != null && telefono!.isNotEmpty;
-
-  /// Verificar si tiene dirección
-  bool get hasDireccion => direccion != null && direccion!.isNotEmpty;
-
-  /// Representación como string
-  @override
-  String toString() {
-    return 'SupplierModel(supplierID: $supplierID, nombre: $nombre, contacto: $contacto, telefono: $telefono, email: $email, direccion: $direccion, estado: $estado)';
-  }
-
-  /// Comparación de igualdad
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is SupplierModel &&
-        other.supplierID == supplierID &&
-        other.nombre == nombre &&
-        other.contacto == contacto &&
-        other.telefono == telefono &&
-        other.email == email &&
-        other.direccion == direccion &&
-        other.estado == estado;
-  }
-
-  /// Hash code
-  @override
-  int get hashCode {
-    return Object.hash(
-      supplierID,
-      nombre,
-      contacto,
-      telefono,
-      email,
-      direccion,
-      estado,
-    );
-  }
-
-  /// Validar datos del proveedor
   List<String> validate() {
     List<String> errors = [];
-
-    if (nombre.trim().isEmpty) {
-      errors.add('El nombre del proveedor es requerido');
-    }
-
-    if (email != null && email!.isNotEmpty && !email!.contains('@')) {
-      errors.add('El email no tiene un formato válido');
-    }
-
-    if (estado.trim().isEmpty) {
-      errors.add('El estado es requerido');
-    }
-
+    if (name.trim().isEmpty) errors.add('El nombre es requerido');
+    if (ruc.trim().isEmpty) errors.add('El RUC es requerido');
+    if (email.trim().isEmpty) errors.add('El email es requerido');
+    if (address.trim().isEmpty) errors.add('La dirección es requerida');
+    if (estatus.trim().isEmpty) errors.add('El estatus es requerido');
     return errors;
   }
 
-  /// Crear proveedor vacío
   factory SupplierModel.empty() {
-    return SupplierModel(nombre: '', estado: 'activo');
+    return SupplierModel(
+      name: '',
+      ruc: '',
+      email: '',
+      address: '',
+      estatus: 'A',
+    );
   }
+
+  @override
+  String toString() {
+    return 'SupplierModel(supplierID: $supplierID, name: $name, ruc: $ruc, email: $email, phone: $phone, address: $address, estatus: $estatus)';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SupplierModel &&
+          runtimeType == other.runtimeType &&
+          supplierID == other.supplierID &&
+          name == other.name &&
+          ruc == other.ruc &&
+          email == other.email &&
+          phone == other.phone &&
+          address == other.address &&
+          estatus == other.estatus;
+
+  @override
+  int get hashCode =>
+      supplierID.hashCode ^
+      name.hashCode ^
+      ruc.hashCode ^
+      email.hashCode ^
+      phone.hashCode ^
+      address.hashCode ^
+      estatus.hashCode;
 }

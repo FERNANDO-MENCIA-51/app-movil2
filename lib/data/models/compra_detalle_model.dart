@@ -7,7 +7,7 @@ class CompraDetalleModel {
   final int cantidad;
   final double precioUnitario;
   final double subtotal;
-  final String estado;
+  final String estado; // 'A' o 'I'
   final String ruc;
   final ProductoModel producto;
   final CompraModel compra;

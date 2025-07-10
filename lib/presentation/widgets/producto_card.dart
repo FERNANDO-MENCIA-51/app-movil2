@@ -233,7 +233,7 @@ class ProductoCard extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                'Proveedor: ${producto.supplier.nombre}',
+                'Proveedor: ${producto.supplier.name}',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 12,

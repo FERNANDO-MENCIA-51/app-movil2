@@ -14,7 +14,6 @@ class VentaRequestModel {
   });
 
   Map<String, dynamic> toJson() {
-    // Formatea la fecha manualmente (sin intl)
     final String formattedFecha =
         "${fechaVenta.year.toString().padLeft(4, '0')}-${fechaVenta.month.toString().padLeft(2, '0')}-${fechaVenta.day.toString().padLeft(2, '0')}";
 

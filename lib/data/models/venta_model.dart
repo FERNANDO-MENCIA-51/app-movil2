@@ -25,9 +25,9 @@ class VentaModel {
       totalVenta: (json['totalVenta'] as num).toDouble(),
       estado: json['estado'] as String,
       cliente: ClienteModel.fromJson(json['cliente'] as Map<String, dynamic>),
-      detalles: (json['detalles'] as List<dynamic>?)
-          ?.map((e) => VentaDetalleModel.fromJson(e))
-          .toList() ?? [],
+      detalles: (json['detalles'] as List<dynamic>? ?? [])
+          .map((e) => VentaDetalleModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -45,7 +45,7 @@ class VentaModel {
   String get fechaFormateada =>
       '${fechaVenta.day.toString().padLeft(2, '0')}/${fechaVenta.month.toString().padLeft(2, '0')}/${fechaVenta.year}';
 
-  bool get isActivo => estado.toLowerCase() == 'activo';
+  bool get isActivo => estado.toUpperCase() == 'A';
 
   @override
   String toString() {

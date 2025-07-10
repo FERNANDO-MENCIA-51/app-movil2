@@ -4,7 +4,7 @@ import '../models/venta_model.dart';
 import '../services/auth_service.dart';
 
 class VentaService {
-  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/ventas';
+  static const String _baseUrl = 'http://192.168.0.106:8080/v1/api/ventas';
   final AuthService _authService = AuthService();
 
   Future<List<VentaModel>> getAllVentas() async {

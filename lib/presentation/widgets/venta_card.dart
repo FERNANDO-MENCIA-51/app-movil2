@@ -97,6 +97,8 @@ class VentaCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
@@ -112,15 +114,17 @@ class VentaCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: venta.isActivo
+            color: venta.estado.toUpperCase() == 'A'
                 ? AppColors.success.withValues(alpha: 0.2)
                 : AppColors.error.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            venta.isActivo ? 'Activo' : 'Inactivo',
+            venta.estado.toUpperCase() == 'A' ? 'Activo' : 'Inactivo',
             style: TextStyle(
-              color: venta.isActivo ? AppColors.success : AppColors.error,
+              color: venta.estado.toUpperCase() == 'A'
+                  ? AppColors.success
+                  : AppColors.error,
               fontSize: 10,
               fontWeight: FontWeight.bold,
             ),
@@ -147,9 +151,11 @@ class VentaCard extends StatelessWidget {
         const Icon(Icons.info_outline, color: AppColors.textHint, size: 14),
         const SizedBox(width: 6),
         Text(
-          venta.estado,
+          venta.estado.toUpperCase() == 'A' ? 'Activo' : 'Inactivo',
           style: TextStyle(
-            color: venta.isActivo ? AppColors.success : AppColors.error,
+            color: venta.estado.toUpperCase() == 'A'
+                ? AppColors.success
+                : AppColors.error,
             fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
@@ -169,13 +175,23 @@ class VentaCard extends StatelessWidget {
             onPressed: onView!,
           ),
         if (onView != null) const SizedBox(width: 8),
-        if (venta.isActivo && onDelete != null)
+        // Botón de editar venta
+        if (onTap != null)
+          _ActionButton(
+            icon: Icons.edit,
+            color: AppColors.primary,
+            onPressed: onTap!,
+          ),
+        if (onTap != null) const SizedBox(width: 8),
+        // Solo muestra el tachito si la venta está activa (estado == 'A')
+        if (venta.estado.toUpperCase() == 'A' && onDelete != null)
           _ActionButton(
             icon: Icons.delete,
             color: AppColors.error,
             onPressed: onDelete!,
           ),
-        if (!venta.isActivo && onRestore != null)
+        // Solo muestra el icono de restaurar si la venta está inactiva (estado == 'I')
+        if (venta.estado.toUpperCase() == 'I' && onRestore != null)
           _ActionButton(
             icon: Icons.restore,
             color: AppColors.success,

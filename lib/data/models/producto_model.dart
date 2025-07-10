@@ -9,7 +9,7 @@ class ProductoModel {
   final String? categoria;
   final double precioVenta;
   final int stock;
-  final String estatus;
+  final String estatus; // 'A' o 'I'
   final DateTime fechaIngreso;
   final SupplierModel supplier;
 
@@ -27,7 +27,6 @@ class ProductoModel {
     required this.supplier,
   });
 
-  /// Crear instancia desde JSON
   factory ProductoModel.fromJson(Map<String, dynamic> json) {
     return ProductoModel(
       productoID: json['productoID'] as int?,
@@ -38,12 +37,7 @@ class ProductoModel {
       categoria: json['categoria'] as String?,
       precioVenta: (json['precioVenta'] as num).toDouble(),
       stock: json['stock'] as int,
-      // Cambia aquí: acepta también 'A' como activo
-      estatus: (json['estatus'] as String).toLowerCase() == 'a'
-          ? 'activo'
-          : (json['estatus'] as String).toLowerCase() == 'i'
-          ? 'inactivo'
-          : (json['estatus'] as String),
+      estatus: json['estatus'] as String,
       fechaIngreso: json['fechaIngreso'] != null
           ? DateTime.parse(json['fechaIngreso'])
           : DateTime.now(),
@@ -53,7 +47,6 @@ class ProductoModel {
     );
   }
 
-  /// Convertir a JSON
   Map<String, dynamic> toJson() {
     return {
       'productoID': productoID,
@@ -70,7 +63,6 @@ class ProductoModel {
     };
   }
 
-  /// Crear copia con modificaciones
   ProductoModel copyWith({
     int? productoID,
     String? codeBarra,
@@ -99,22 +91,12 @@ class ProductoModel {
     );
   }
 
-  /// Verificar si el producto está activo
-  bool get isActivo => estatus.toLowerCase() == 'activo';
-
-  /// Verificar si el producto está disponible
+  bool get isActivo => estatus.toUpperCase() == 'A';
   bool get isDisponible => isActivo && stock > 0;
-
-  /// Verificar si el stock está bajo (menos de 10)
   bool get isStockBajo => stock < 10;
-
-  /// Verificar si tiene código de barra
   bool get hasCodeBarra => codeBarra != null && codeBarra!.isNotEmpty;
-
-  /// Verificar si tiene descripción
   bool get hasDescripcion => descripcion != null && descripcion!.isNotEmpty;
 
-  /// Obtener nombre con marca
   String get nombreCompleto {
     if (marca != null && marca!.isNotEmpty) {
       return '$nombre - $marca';
@@ -122,21 +104,17 @@ class ProductoModel {
     return nombre;
   }
 
-  /// Obtener precio formateado
   String get precioFormateado => '\$${precioVenta.toStringAsFixed(2)}';
 
-  /// Obtener fecha formateada
   String get fechaFormateada {
     return '${fechaIngreso.day.toString().padLeft(2, '0')}/${fechaIngreso.month.toString().padLeft(2, '0')}/${fechaIngreso.year}';
   }
 
-  /// Representación como string
   @override
   String toString() {
     return 'ProductoModel(productoID: $productoID, codeBarra: $codeBarra, nombre: $nombre, descripcion: $descripcion, marca: $marca, categoria: $categoria, precioVenta: $precioVenta, stock: $stock, estatus: $estatus, fechaIngreso: $fechaIngreso, supplier: $supplier)';
   }
 
-  /// Comparación de igualdad
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -154,7 +132,6 @@ class ProductoModel {
         other.supplier == supplier;
   }
 
-  /// Hash code
   @override
   int get hashCode {
     return Object.hash(
@@ -172,42 +149,27 @@ class ProductoModel {
     );
   }
 
-  /// Validar datos del producto
   List<String> validate() {
     List<String> errors = [];
-
     if (nombre.trim().isEmpty) {
       errors.add('El nombre del producto es requerido');
     }
-
-    if (precioVenta <= 0) {
-      errors.add('El precio de venta debe ser mayor a 0');
-    }
-
-    if (stock < 0) {
-      errors.add('El stock no puede ser negativo');
-    }
-
-    if (estatus.trim().isEmpty) {
-      errors.add('El estatus es requerido');
-    }
-
-    // Validar supplier
+    if (precioVenta <= 0) errors.add('El precio de venta debe ser mayor a 0');
+    if (stock < 0) errors.add('El stock no puede ser negativo');
+    if (estatus.trim().isEmpty) errors.add('El estatus es requerido');
     final supplierErrors = supplier.validate();
     if (supplierErrors.isNotEmpty) {
       errors.addAll(supplierErrors.map((e) => 'Proveedor: $e'));
     }
-
     return errors;
   }
 
-  /// Crear producto vacío
   factory ProductoModel.empty() {
     return ProductoModel(
       nombre: '',
       precioVenta: 0.0,
       stock: 0,
-      estatus: 'activo',
+      estatus: 'A',
       fechaIngreso: DateTime.now(),
       supplier: SupplierModel.empty(),
     );

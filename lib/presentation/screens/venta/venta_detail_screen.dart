@@ -13,16 +13,40 @@ class VentaDetailScreen extends StatefulWidget {
   State<VentaDetailScreen> createState() => _VentaDetailScreenState();
 }
 
-class _VentaDetailScreenState extends State<VentaDetailScreen> {
+class _VentaDetailScreenState extends State<VentaDetailScreen>
+    with TickerProviderStateMixin {
   final VentaTransaccionService _ventaTransaccionService =
       VentaTransaccionService();
   List<VentaDetalleModel> _detalles = [];
   bool _isLoading = true;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
     _loadDetalles();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _animationController.forward();
   }
 
   Future<void> _loadDetalles() async {
@@ -30,6 +54,7 @@ class _VentaDetailScreenState extends State<VentaDetailScreen> {
       final ventaCompleta = await _ventaTransaccionService.obtenerVentaCompleta(
         widget.venta.ventaID!,
       );
+
       setState(() {
         _detalles = ventaCompleta?.detalles ?? [];
         _isLoading = false;
@@ -49,33 +74,151 @@ class _VentaDetailScreenState extends State<VentaDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Detalle de Venta',
-          style: TextStyle(color: AppColors.textPrimary),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.backgroundDark,
+              AppColors.surfaceDark,
+              AppColors.cardDark,
+            ],
+          ),
         ),
-        backgroundColor: AppColors.backgroundDark,
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildCustomAppBar(),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: _buildContent(),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
       ),
-      backgroundColor: AppColors.backgroundDark,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
-          : SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildVentaInfo(),
-                    const SizedBox(height: 20),
-                    _buildDetalleList(),
-                    const SizedBox(height: 20),
-                    _buildResumen(),
-                  ],
-                ),
+    );
+  }
+
+  Widget _buildContent() {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildVentaInfo(),
+            const SizedBox(height: 20),
+            _buildDetalleList(),
+            const SizedBox(height: 20),
+            _buildResumen(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.surfaceDark.withValues(alpha: 0.8),
+            AppColors.cardDark.withValues(alpha: 0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.2),
+                  AppColors.secondary.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.primary,
+                size: 24,
               ),
             ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Detalle de Venta',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  widget.venta.cliente.nombreCompleto,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: widget.venta.estado.toUpperCase() == 'A'
+                  ? AppColors.success.withValues(alpha: 0.2)
+                  : AppColors.error.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: widget.venta.estado.toUpperCase() == 'A'
+                    ? AppColors.success
+                    : AppColors.error,
+                width: 1,
+              ),
+            ),
+            child: Text(
+              widget.venta.estado.toUpperCase() == 'A' ? 'ACTIVO' : 'INACTIVO',
+              style: TextStyle(
+                color: widget.venta.estado.toUpperCase() == 'A'
+                    ? AppColors.success
+                    : AppColors.error,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -120,9 +263,11 @@ class _VentaDetailScreenState extends State<VentaDetailScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Estado: ${venta.estado}',
+            'Estado: ${venta.estado.toUpperCase() == 'A' ? 'Activo' : 'Inactivo'}',
             style: TextStyle(
-              color: venta.isActivo ? AppColors.success : AppColors.error,
+              color: venta.estado.toUpperCase() == 'A'
+                  ? AppColors.success
+                  : AppColors.error,
               fontWeight: FontWeight.bold,
               fontSize: 13,
             ),

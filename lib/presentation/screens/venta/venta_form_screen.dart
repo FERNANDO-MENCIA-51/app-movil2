@@ -1,49 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:myapp/data/models/venta_model.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/models/cliente_model.dart';
 import '../../../data/models/producto_model.dart';
-import '../../../data/models/venta_model.dart';
 import '../../../data/models/venta_detalle_model.dart';
-import '../../../data/models/dto/venta_detalle_request_dto.dart';
 import '../../../data/models/dto/venta_request_model.dart';
+import '../../../data/models/dto/venta_detalle_request_dto.dart';
 import '../../../data/services/cliente_service.dart';
 import '../../../data/services/producto_service.dart';
 import '../../../data/services/venta_transaccion_service.dart';
 
-
 class VentaFormScreen extends StatefulWidget {
-  const VentaFormScreen({super.key});
+  final VentaModel? venta;
+  final bool isEditing;
+
+  const VentaFormScreen({super.key, this.venta, this.isEditing = false});
 
   @override
   State<VentaFormScreen> createState() => _VentaFormScreenState();
 }
 
-class _VentaFormScreenState extends State<VentaFormScreen> {
+class _VentaFormScreenState extends State<VentaFormScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final ClienteService _clienteService = ClienteService();
   final ProductoService _productoService = ProductoService();
-  final VentaTransaccionService _ventaTransaccionService =
-      VentaTransaccionService();
+  final VentaTransaccionService _ventaService = VentaTransaccionService();
 
   List<ClienteModel> _clientes = [];
   List<ProductoModel> _productos = [];
   ClienteModel? _selectedCliente;
   ProductoModel? _selectedProducto;
   int _cantidadProducto = 1;
-  final List<VentaDetalleModel> _carrito = [];
+  List<VentaDetalleModel> _carrito = [];
   bool _isLoading = false;
-
-  static const double _igv = 0.18;
 
   @override
   void initState() {
     super.initState();
     _loadClientes();
     _loadProductos();
+    if (widget.isEditing && widget.venta != null) {
+      _loadVentaDetalles();
+      // Cargar cliente seleccionado al editar
+      _selectedCliente = widget.venta!.cliente;
+    }
   }
 
   Future<void> _loadClientes() async {
-    final clientes = await _clienteService.getActiveClients();
+    // Solo usa lo que tienes en tu ClienteService
+    final clientes = await _clienteService
+        .getAllClients(); // Usa el método real que tienes
     setState(() => _clientes = clientes);
   }
 
@@ -52,8 +59,23 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
     setState(() => _productos = productos);
   }
 
-  double get subtotal => _carrito.fold(0, (sum, d) => sum + d.subtotal);
-  double get igv => subtotal * _igv;
+  Future<void> _loadVentaDetalles() async {
+    // Si el modelo ya trae los detalles, los usamos directamente
+    if (widget.venta!.detalles.isNotEmpty) {
+      setState(() {
+        _carrito = List<VentaDetalleModel>.from(widget.venta!.detalles);
+      });
+      return;
+    }
+    // Si necesitas obtener los detalles desde el backend:
+    // final detalles = await VentaDetalleService().getDetallesByVentaId(widget.venta!.ventaID!);
+    // setState(() {
+    //   _carrito = detalles;
+    // });
+  }
+
+  double get subtotal => _carrito.fold(0.0, (sum, d) => sum + d.subtotal);
+  double get igv => subtotal * 0.18;
   double get total => subtotal + igv;
 
   void _addProductoToCarrito() {
@@ -61,30 +83,26 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
     if (_carrito.any(
       (d) => d.producto.productoID == _selectedProducto!.productoID,
     )) {
-      _showSnackBar('El producto ya está en el carrito', AppColors.error);
+      _showErrorSnackBar('El producto ya está en el carrito');
+      return;
+    }
+    if (_cantidadProducto <= 0) {
+      _showErrorSnackBar('La cantidad debe ser mayor a cero');
       return;
     }
     if (_cantidadProducto > _selectedProducto!.stock) {
-      _showSnackBar('La cantidad supera el stock disponible', AppColors.error);
+      _showErrorSnackBar('No hay suficiente stock disponible');
       return;
     }
     setState(() {
       _carrito.add(
         VentaDetalleModel(
-          detalleID: null,
           cantidad: _cantidadProducto,
-          precioUnitario: _selectedProducto!.precioVenta,
-          subtotal: _selectedProducto!.precioVenta * _cantidadProducto,
-          estado: 'activo',
-          venta: VentaModel(
-            ventaID: null,
-            fechaVenta: DateTime.now(),
-            totalVenta: 0,
-            estado: 'activo',
-            cliente: _selectedCliente ?? _clientes.first,
-            detalles: [],
-          ),
+          precioUnitario: _selectedProducto!.precioVenta.toDouble(),
+          subtotal:
+              (_selectedProducto!.precioVenta.toDouble() * _cantidadProducto),
           producto: _selectedProducto!,
+          estado: 'A',
         ),
       );
       _selectedProducto = null;
@@ -100,47 +118,59 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
 
   Future<void> _saveVenta() async {
     if (_selectedCliente == null || _carrito.isEmpty) {
-      _showSnackBar('Seleccione cliente y agregue productos', AppColors.error);
+      _showErrorSnackBar('Seleccione cliente y agregue productos');
       return;
     }
     setState(() => _isLoading = true);
     try {
       final detalles = _carrito
           .map(
-            (detalle) => VentaDetalleRequestDTO(
-              productoId: detalle.producto.productoID!,
-              cantidad: detalle.cantidad.toDouble(),
-              precioUnitario: detalle.precioUnitario,
-              subtotal: detalle.subtotal,
+            (d) => VentaDetalleRequestDTO(
+              productoId: d.producto.productoID!,
+              cantidad: d.cantidad.toDouble(),
+              precioUnitario: d.precioUnitario,
+              subtotal: d.subtotal,
             ),
           )
           .toList();
 
       final ventaRequest = VentaRequestModel(
-        clienteId: _selectedCliente!.clienteID!,
         fechaVenta: DateTime.now(),
         totalVenta: total,
+        clienteId: _selectedCliente!.clienteID!,
         detalles: detalles,
       );
 
-      await _ventaTransaccionService.registrarVentaCompleta(ventaRequest);
+      // Usa el método correcto para registrar la venta
+      await _ventaService.registrarVentaCompleta(ventaRequest);
 
       if (mounted) {
-        _showSnackBar('Venta registrada exitosamente', AppColors.success);
+        _showSuccessSnackBar('Venta registrada exitosamente');
         Navigator.pop(context, true);
       }
     } catch (e) {
-      _showSnackBar('Error: $e', AppColors.error);
+      _showErrorSnackBar('Error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  void _showSnackBar(String message, Color color) {
+  void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: color,
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -150,41 +180,134 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Nueva Venta',
-          style: TextStyle(color: AppColors.textPrimary),
-        ),
-        backgroundColor: AppColors.backgroundDark,
-      ),
-      backgroundColor: AppColors.backgroundDark,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildClienteDropdown(),
-                const SizedBox(height: 20),
-                _buildProductoSelector(),
-                const SizedBox(height: 20),
-                _buildCarrito(),
-                const SizedBox(height: 20),
-                _buildResumen(),
-                const SizedBox(height: 30),
-                Row(
-                  children: [
-                    Expanded(child: _buildCancelButton()),
-                    const SizedBox(width: 15),
-                    Expanded(child: _buildSaveButton()),
-                  ],
-                ),
-              ],
-            ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppColors.backgroundDark,
+              AppColors.surfaceDark,
+              AppColors.cardDark,
+            ],
           ),
         ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildCustomAppBar(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildForm(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomAppBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.surfaceDark.withValues(alpha: 0.8),
+            AppColors.cardDark.withValues(alpha: 0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.2),
+                  AppColors.secondary.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.primary,
+                size: 24,
+              ),
+            ),
+          ),
+          const SizedBox(width: 15),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Nueva Venta',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Registrar venta y detalle',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+          const Spacer(),
+          if (_isLoading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+                strokeWidth: 2,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 10),
+          _buildClienteDropdown(),
+          const SizedBox(height: 20),
+          _buildProductoSelector(),
+          const SizedBox(height: 20),
+          _buildCarrito(),
+          const SizedBox(height: 20),
+          _buildResumen(),
+          const SizedBox(height: 30),
+          Row(
+            children: [
+              Expanded(child: _buildCancelButton()),
+              const SizedBox(width: 15),
+              Expanded(child: _buildSaveButton()),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -209,7 +332,7 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
       decoration: const InputDecoration(
         labelText: 'Seleccionar Cliente',
         labelStyle: TextStyle(color: AppColors.textSecondary),
-        prefixIcon: Icon(Icons.people, color: AppColors.primary),
+        prefixIcon: Icon(Icons.person, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
           borderSide: BorderSide.none,
@@ -239,9 +362,19 @@ class _VentaFormScreenState extends State<VentaFormScreen> {
                 .map(
                   (producto) => DropdownMenuItem(
                     value: producto,
-                    child: Text(
-                      producto.nombreCompleto,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            '${producto.nombreCompleto} (Stock: ${producto.stock})',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )

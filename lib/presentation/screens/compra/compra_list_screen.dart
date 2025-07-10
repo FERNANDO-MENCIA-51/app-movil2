@@ -22,7 +22,7 @@ class _CompraListScreenState extends State<CompraListScreen>
   List<CompraModel> _compras = [];
   List<CompraModel> _filteredCompras = [];
   bool _isLoading = true;
-  String _selectedFilter = 'todos';
+  String _selectedFilter = 'todos'; // 'todos', 'A', 'I'
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -65,10 +65,10 @@ class _CompraListScreenState extends State<CompraListScreen>
       setState(() => _isLoading = true);
       List<CompraModel> compras;
       switch (_selectedFilter) {
-        case 'activos':
+        case 'A':
           compras = await _compraService.getActiveCompras();
           break;
-        case 'inactivos':
+        case 'I':
           compras = await _compraService.getInactiveCompras();
           break;
         default:
@@ -79,6 +79,7 @@ class _CompraListScreenState extends State<CompraListScreen>
         _filteredCompras = compras;
         _isLoading = false;
       });
+      _filterCompras(_searchController.text);
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorSnackBar('Error al cargar compras: $e');
@@ -91,13 +92,8 @@ class _CompraListScreenState extends State<CompraListScreen>
         _filteredCompras = _compras;
       } else {
         _filteredCompras = _compras.where((compra) {
-          return compra.supplier.nombre.toLowerCase().contains(
-                query.toLowerCase(),
-              ) ||
-              (compra.observaciones?.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ??
-                  false);
+          return compra.supplier.name.toLowerCase().contains(query.toLowerCase()) ||
+              (compra.observaciones?.toLowerCase().contains(query.toLowerCase()) ?? false);
         }).toList();
       }
     });
@@ -144,6 +140,7 @@ class _CompraListScreenState extends State<CompraListScreen>
             children: [
               _buildCustomAppBar(),
               _buildSearchAndFilters(),
+              _buildCompraStats(),
               Expanded(child: _buildCompraList()),
             ],
           ),
@@ -202,9 +199,9 @@ class _CompraListScreenState extends State<CompraListScreen>
               ),
               Text(
                 'Historial de compras',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -281,10 +278,10 @@ class _CompraListScreenState extends State<CompraListScreen>
               Row(
                 children: [
                   Expanded(child: _buildFilterChip('Todos', 'todos')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildFilterChip('Activos', 'activos')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildFilterChip('Inactivos', 'inactivos')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Activos', 'A')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Inactivos', 'I')),
                 ],
               ),
             ],
@@ -302,7 +299,7 @@ class _CompraListScreenState extends State<CompraListScreen>
         _loadCompras();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
           gradient: isSelected
               ? const LinearGradient(
@@ -323,11 +320,79 @@ class _CompraListScreenState extends State<CompraListScreen>
           style: TextStyle(
             color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 12,
+            fontSize: 11,
           ),
           textAlign: TextAlign.center,
         ),
       ),
+    );
+  }
+
+  Widget _buildCompraStats() {
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.primary.withValues(alpha: 0.2),
+                AppColors.secondary.withValues(alpha: 0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildStatItem('Total', _compras.length, Icons.shopping_cart),
+              _buildStatItem(
+                'Activas',
+                _compras.where((c) => c.isActivo).length,
+                Icons.check_circle,
+              ),
+              _buildStatItem(
+                'Inactivas',
+                _compras.where((c) => !c.isActivo).length,
+                Icons.cancel,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, int value, IconData icon) {
+    Color iconColor = AppColors.primary;
+    if (label == 'Inactivas') iconColor = AppColors.error;
+
+    return Column(
+      children: [
+        Icon(icon, color: iconColor, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          value.toString(),
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
+        ),
+      ],
     );
   }
 
@@ -408,7 +473,7 @@ class _CompraListScreenState extends State<CompraListScreen>
                           ),
                         ),
                         title: Text(
-                          compra.supplier.nombre,
+                          compra.supplier.name,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.bold,
@@ -449,13 +514,13 @@ class _CompraListScreenState extends State<CompraListScreen>
                           ],
                         ),
                         onTap: () {
-
+                          // Aquí puedes navegar al detalle de la compra si lo deseas
                         },
                       ),
                     ),
                   ),
                 );
-              },
+              }
             );
           },
         ),
@@ -482,7 +547,7 @@ class _CompraListScreenState extends State<CompraListScreen>
       ),
       child: FloatingActionButton(
         onPressed: () {
-
+          // Aquí puedes navegar al formulario de nueva compra
         },
         backgroundColor: Colors.transparent,
         elevation: 0,

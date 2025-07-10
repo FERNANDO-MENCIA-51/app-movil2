@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 class ClienteService {
   // Reemplaza con la URL base de tu backend
   static const String _baseUrl =
-      'http://192.168.0.102:8080/v1/api/clientes'; // Usa tu IP local
+      'http://192.168.0.106:8080/v1/api/clientes'; // Usa tu IP local
   final AuthService _authService = AuthService();
 
   /// Método para obtener todos los clientes (activos e inactivos)

@@ -83,8 +83,8 @@ class AppRoutes {
         final args = settings.arguments as Map<String, dynamic>?;
         return MaterialPageRoute(
           builder: (context) => SupplierFormScreen(
-            supplier: args?['supplier'] as SupplierModel?,
-            isEditing: args?['isEditing'] as bool? ?? false,
+            supplier: args?['supplier'],
+            isEditing: args?['isEditing'] ?? false,
           ),
         );
       case '/supplier-detail':
@@ -105,7 +105,13 @@ class AppRoutes {
         );
       // Venta
       case '/venta-form':
-        return MaterialPageRoute(builder: (context) => const VentaFormScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(
+          builder: (context) => VentaFormScreen(
+            venta: args?['venta'] as VentaModel?,
+            isEditing: args?['isEditing'] as bool? ?? false,
+          ),
+        );
       case '/venta-detail':
         final venta = settings.arguments as VentaModel;
         return MaterialPageRoute(
@@ -179,44 +185,57 @@ class AppRoutes {
     Navigator.pushNamed(context, '/suppliers');
   }
 
-  static void navigateToSupplierForm(
+  static void navigateToSupplierForm(BuildContext context, {SupplierModel? supplier, bool isEditing = false}) {
     BuildContext context, {
     SupplierModel? supplier,
-  }) {
-    Navigator.pushNamed(
+  }) {'/supplier-form',
+    Navigator.pushNamed(ier': supplier, 'isEditing': isEditing},
       context,
       '/supplier-form',
       arguments: {'supplier': supplier, 'isEditing': supplier != null},
-    );
-  }
-
+    );ic void navigateToSupplierDetail(
+  } BuildContext context,
+    SupplierModel supplier,
   static void navigateToSupplierDetail(
-    BuildContext context,
+    BuildContext context,ontext, '/supplier-detail', arguments: supplier);
     SupplierModel supplier,
   ) {
     Navigator.pushNamed(context, '/supplier-detail', arguments: supplier);
+  } Navigator.pushNamed(context, '/ventas');
   }
-
   static void navigateToVentas(BuildContext context) {
     Navigator.pushNamed(context, '/ventas');
+  } BuildContext context, {
+    venta,
+  static void navigateToVentaForm(
+    BuildContext context, {
+    venta,tor.push(
+    bool isEditing = false,
+  }) {MaterialPageRoute(
+    Navigator.push(ontext) =>
+      context,ntaFormScreen(venta: venta, isEditing: isEditing),
+      MaterialPageRoute(
+        builder: (context) =>
+            VentaFormScreen(venta: venta, isEditing: isEditing),
+      ),
+    );ic void navigateToVentaDetail(BuildContext context, venta) {
+  } Navigator.push(
+      context,
+  static void navigateToVentaDetail(BuildContext context, venta) {nta: venta)),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => VentaDetailScreen(venta: venta)),
+    );ic void navigateToCompras(BuildContext context) {
+  } Navigator.pushNamed(context, '/compras');
   }
-
-  static void navigateToVentaForm(BuildContext context) {
-    Navigator.pushNamed(context, '/venta-form');
-  }
-
-  static void navigateToVentaDetail(BuildContext context, VentaModel venta) {
-    Navigator.pushNamed(context, '/venta-detail', arguments: venta);
-  }
-
   static void navigateToCompras(BuildContext context) {
-    Navigator.pushNamed(context, '/compras');
+    Navigator.pushNamed(context, '/compras');xt context) {
+  } Navigator.pushNamed(context, '/compra-form');
   }
-
   static void navigateToCompraForm(BuildContext context) {
-    Navigator.pushNamed(context, '/compra-form');
+    Navigator.pushNamed(context, '/compra-form'); context, CompraModel compra) {
+  } Navigator.pushNamed(context, '/compra-detail', arguments: compra);
   }
-
   static void navigateToCompraDetail(BuildContext context, CompraModel compra) {
     Navigator.pushNamed(context, '/compra-detail', arguments: compra);
   }

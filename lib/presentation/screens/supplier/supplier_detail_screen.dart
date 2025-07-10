@@ -144,7 +144,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
                   ),
                 ),
                 Text(
-                  _supplier.nombre,
+                  _supplier.name,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -252,7 +252,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            _supplier.nombre,
+            _supplier.name,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
@@ -260,17 +260,15 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          if (_supplier.contacto != null && _supplier.contacto!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                'Contacto: ${_supplier.contacto}',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                ),
-              ),
+          const SizedBox(height: 8),
+          Text(
+            _supplier.ruc,
+            style: const TextStyle(
+              color: AppColors.secondary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
+          ),
         ],
       ),
     );
@@ -313,7 +311,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
                 const Icon(Icons.info, color: AppColors.primary, size: 20),
                 const SizedBox(width: 10),
                 const Text(
-                  'Información de Contacto',
+                  'Información del Proveedor',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.bold,
@@ -323,16 +321,13 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
               ],
             ),
           ),
-          _buildInfoRow('Teléfono', _supplier.telefono ?? '-', Icons.phone),
-          _buildInfoRow('Email', _supplier.email ?? '-', Icons.email),
-          _buildInfoRow(
-            'Dirección',
-            _supplier.direccion ?? '-',
-            Icons.location_on,
-          ),
+          _buildInfoRow('Email', _supplier.email, Icons.email),
+          if (_supplier.phone != null && _supplier.phone!.isNotEmpty)
+            _buildInfoRow('Teléfono', _supplier.phone!, Icons.phone),
+          _buildInfoRow('Dirección', _supplier.address, Icons.location_on),
           _buildInfoRow(
             'Estado',
-            _supplier.estado.toUpperCase(),
+            _supplier.estatus.toUpperCase(),
             _supplier.isActivo ? Icons.check_circle : Icons.cancel,
             color: _supplier.isActivo ? AppColors.success : AppColors.error,
           ),
@@ -377,7 +372,9 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  value,
+                  label == 'Estado'
+                      ? (value == 'A' ? 'Activo' : 'Inactivo')
+                      : value,
                   style: TextStyle(
                     color: color ?? AppColors.textPrimary,
                     fontSize: 14,
@@ -409,7 +406,9 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
             label: 'EDITAR',
             icon: Icons.edit,
             color: AppColors.primary,
-            onPressed: () {},
+            onPressed: () {
+              // Aquí puedes navegar al formulario de edición si lo deseas
+            },
           ),
         ),
       ],
@@ -491,8 +490,8 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
         ),
         content: Text(
           _supplier.isActivo
-              ? '¿Estás seguro de que deseas eliminar a ${_supplier.nombre}?'
-              : '¿Estás seguro de que deseas restaurar a ${_supplier.nombre}?',
+              ? '¿Estás seguro de que deseas eliminar ${_supplier.name}? Esta acción se puede revertir.'
+              : '¿Estás seguro de que deseas restaurar ${_supplier.name}?',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -504,9 +503,9 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _deleteOrRestoreSupplier();
+              await _deleteOrRestoreSupplier();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: _supplier.isActivo
@@ -534,13 +533,13 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen>
         await _supplierService.deleteLogicalSupplier(_supplier.supplierID!);
         _showSuccessSnackBar('Proveedor eliminado exitosamente');
         setState(() {
-          _supplier = _supplier.copyWith(estado: 'inactivo');
+          _supplier = _supplier.copyWith(estatus: 'I');
         });
       } else {
         await _supplierService.restoreSupplier(_supplier.supplierID!);
         _showSuccessSnackBar('Proveedor restaurado exitosamente');
         setState(() {
-          _supplier = _supplier.copyWith(estado: 'activo');
+          _supplier = _supplier.copyWith(estatus: 'A');
         });
       }
     } catch (e) {

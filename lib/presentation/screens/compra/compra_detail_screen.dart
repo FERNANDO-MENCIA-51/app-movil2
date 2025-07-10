@@ -19,10 +19,33 @@ class _CompraDetailScreenState extends State<CompraDetailScreen>
   List<CompraDetalleModel> _detalles = [];
   bool _isLoading = true;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
     _loadDetalles();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _animationController.forward();
   }
 
   Future<void> _loadDetalles() async {
@@ -131,7 +154,7 @@ class _CompraDetailScreenState extends State<CompraDetailScreen>
                 ),
               ),
               Text(
-                widget.compra.supplier.nombre,
+                widget.compra.supplier.name,
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
@@ -171,15 +194,21 @@ class _CompraDetailScreenState extends State<CompraDetailScreen>
   }
 
   Widget _buildContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCompraInfo(),
-        const SizedBox(height: 20),
-        _buildDetalleList(),
-        const SizedBox(height: 20),
-        _buildResumen(),
-      ],
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCompraInfo(),
+            const SizedBox(height: 20),
+            _buildDetalleList(),
+            const SizedBox(height: 20),
+            _buildResumen(),
+          ],
+        ),
+      ),
     );
   }
 
@@ -207,7 +236,7 @@ class _CompraDetailScreenState extends State<CompraDetailScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Proveedor: ${compra.supplier.nombre}',
+            'Proveedor: ${compra.supplier.name}',
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.bold,
@@ -233,7 +262,7 @@ class _CompraDetailScreenState extends State<CompraDetailScreen>
             ),
           const SizedBox(height: 6),
           Text(
-            'Estado: ${compra.estado}',
+            'Estado: ${compra.estado == 'A' ? 'Activo' : 'Inactivo'}',
             style: TextStyle(
               color: compra.isActivo ? AppColors.success : AppColors.error,
               fontWeight: FontWeight.bold,

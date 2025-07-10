@@ -20,20 +20,20 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
   final _formKey = GlobalKey<FormState>();
   final SupplierService _supplierService = SupplierService();
 
-  final _nombreController = TextEditingController();
-  final _contactoController = TextEditingController();
-  final _telefonoController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _rucController = TextEditingController();
   final _emailController = TextEditingController();
-  final _direccionController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
 
-  String _selectedEstado = 'activo';
+  String _selectedEstatus = 'A';
   bool _isLoading = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
-  final List<String> _estados = ['activo', 'inactivo'];
+  final List<String> _estatusOptions = ['A', 'I'];
 
   @override
   void initState() {
@@ -66,23 +66,23 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
   void _initializeForm() {
     if (widget.supplier != null) {
       final supplier = widget.supplier!;
-      _nombreController.text = supplier.nombre;
-      _contactoController.text = supplier.contacto ?? '';
-      _telefonoController.text = supplier.telefono ?? '';
-      _emailController.text = supplier.email ?? '';
-      _direccionController.text = supplier.direccion ?? '';
-      _selectedEstado = supplier.estado;
+      _nameController.text = supplier.name;
+      _rucController.text = supplier.ruc;
+      _emailController.text = supplier.email;
+      _phoneController.text = supplier.phone ?? '';
+      _addressController.text = supplier.address;
+      _selectedEstatus = supplier.estatus;
     }
   }
 
   @override
   void dispose() {
     _animationController.dispose();
-    _nombreController.dispose();
-    _contactoController.dispose();
-    _telefonoController.dispose();
+    _nameController.dispose();
+    _rucController.dispose();
     _emailController.dispose();
-    _direccionController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
@@ -213,7 +213,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
               const SizedBox(height: 20),
 
               CustomTextField(
-                controller: _nombreController,
+                controller: _nameController,
                 label: 'Nombre del Proveedor',
                 icon: Icons.business,
                 validator: (value) {
@@ -227,18 +227,15 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
               const SizedBox(height: 20),
 
               CustomTextField(
-                controller: _contactoController,
-                label: 'Nombre de Contacto',
-                icon: Icons.person,
-              ),
-
-              const SizedBox(height: 20),
-
-              CustomTextField(
-                controller: _telefonoController,
-                label: 'Teléfono',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
+                controller: _rucController,
+                label: 'RUC',
+                icon: Icons.confirmation_number,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'El RUC es requerido';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 20),
@@ -261,7 +258,16 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
               const SizedBox(height: 20),
 
               CustomTextField(
-                controller: _direccionController,
+                controller: _phoneController,
+                label: 'Teléfono',
+                icon: Icons.phone,
+                keyboardType: TextInputType.phone,
+              ),
+
+              const SizedBox(height: 20),
+
+              CustomTextField(
+                controller: _addressController,
                 label: 'Dirección',
                 icon: Icons.location_on,
                 maxLines: 2,
@@ -273,12 +279,12 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
               const SizedBox(height: 20),
 
               _buildDropdownField(
-                value: _selectedEstado,
-                items: _estados,
+                value: _selectedEstatus,
+                items: _estatusOptions,
                 label: 'Estado del Proveedor',
                 icon: Icons.toggle_on,
                 onChanged: (value) {
-                  setState(() => _selectedEstado = value!);
+                  setState(() => _selectedEstatus = value!);
                 },
               ),
 
@@ -328,7 +334,9 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
               (item) => DropdownMenuItem(
                 value: item,
                 child: Text(
-                  item,
+                  label == 'Estado del Proveedor'
+                      ? (item == 'A' ? 'Activo' : 'Inactivo')
+                      : item,
                   style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ),
@@ -438,20 +446,14 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
     try {
       final supplier = SupplierModel(
         supplierID: widget.supplier?.supplierID,
-        nombre: _nombreController.text.trim(),
-        contacto: _contactoController.text.trim().isEmpty
+        name: _nameController.text.trim(),
+        ruc: _rucController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty
             ? null
-            : _contactoController.text.trim(),
-        telefono: _telefonoController.text.trim().isEmpty
-            ? null
-            : _telefonoController.text.trim(),
-        email: _emailController.text.trim().isEmpty
-            ? null
-            : _emailController.text.trim(),
-        direccion: _direccionController.text.trim().isEmpty
-            ? null
-            : _direccionController.text.trim(),
-        estado: _selectedEstado,
+            : _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        estatus: _selectedEstatus,
       );
 
       if (widget.isEditing) {

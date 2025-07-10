@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/compra_detalle_model.dart';
 
 class CompraDetalleService {
-  static const String _baseUrl = 'http://192.168.0.102:8080/v1/api/compra-detalle';
+  static const String _baseUrl =
+      'http://192.168.0.106:8080/v1/api/compra-detalle';
   static const Map<String, String> _headers = {
     'Content-Type': 'application/json; charset=UTF-8',
   };
@@ -83,7 +84,10 @@ class CompraDetalleService {
   }
 
   Future<void> deleteLogicalCompraDetalle(int id) async {
-    final response = await http.patch(Uri.parse('$_baseUrl/delete/$id'));
+    final response = await http.patch(
+      Uri.parse('$_baseUrl/delete/$id'),
+      headers: _headers,
+    );
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw Exception(
         'Failed to logically delete compra detalle: ${response.statusCode}',
@@ -92,7 +96,10 @@ class CompraDetalleService {
   }
 
   Future<void> restoreCompraDetalle(int id) async {
-    final response = await http.patch(Uri.parse('$_baseUrl/restore/$id'));
+    final response = await http.patch(
+      Uri.parse('$_baseUrl/restore/$id'),
+      headers: _headers,
+    );
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw Exception(
         'Failed to restore compra detalle: ${response.statusCode}',

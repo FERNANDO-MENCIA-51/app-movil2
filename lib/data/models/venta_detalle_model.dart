@@ -1,4 +1,3 @@
-import 'venta_model.dart';
 import 'producto_model.dart';
 
 class VentaDetalleModel {
@@ -7,7 +6,6 @@ class VentaDetalleModel {
   final double precioUnitario;
   final double subtotal;
   final String estado;
-  final VentaModel venta;
   final ProductoModel producto;
 
   VentaDetalleModel({
@@ -16,7 +14,6 @@ class VentaDetalleModel {
     required this.precioUnitario,
     required this.subtotal,
     required this.estado,
-    required this.venta,
     required this.producto,
   });
 
@@ -27,7 +24,6 @@ class VentaDetalleModel {
       precioUnitario: (json['precioUnitario'] as num).toDouble(),
       subtotal: (json['subtotal'] as num).toDouble(),
       estado: json['estado'] as String,
-      venta: VentaModel.fromJson(json['venta'] as Map<String, dynamic>),
       producto: ProductoModel.fromJson(
         json['producto'] as Map<String, dynamic>,
       ),
@@ -41,7 +37,6 @@ class VentaDetalleModel {
       'precioUnitario': precioUnitario,
       'subtotal': subtotal,
       'estado': estado,
-      'venta': venta.toJson(),
       'producto': producto.toJson(),
     };
   }
@@ -52,7 +47,6 @@ class VentaDetalleModel {
     double? precioUnitario,
     double? subtotal,
     String? estado,
-    VentaModel? venta,
     ProductoModel? producto,
   }) {
     return VentaDetalleModel(
@@ -61,13 +55,12 @@ class VentaDetalleModel {
       precioUnitario: precioUnitario ?? this.precioUnitario,
       subtotal: subtotal ?? this.subtotal,
       estado: estado ?? this.estado,
-      venta: venta ?? this.venta,
       producto: producto ?? this.producto,
     );
   }
 
   @override
   String toString() {
-    return 'VentaDetalleModel(detalleID: $detalleID, cantidad: $cantidad, precioUnitario: $precioUnitario, subtotal: $subtotal, estado: $estado, venta: $venta, producto: $producto)';
+    return 'VentaDetalleModel(detalleID: $detalleID, cantidad: $cantidad, precioUnitario: $precioUnitario, subtotal: $subtotal, estado: $estado, producto: $producto)';
   }
 }

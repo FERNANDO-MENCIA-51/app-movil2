@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/colors.dart';
 import '../../../data/models/supplier_model.dart';
 import '../../../data/services/supplier_service.dart';
-import '../../widgets/futuristic_sidebar.dart';
 import '../../widgets/supplier_card.dart';
 import '../../../core/routes/app_routes.dart';
-import '../../../core/constants/app_constants.dart';
 
 class SupplierListScreen extends StatefulWidget {
   const SupplierListScreen({super.key});
@@ -18,12 +16,11 @@ class _SupplierListScreenState extends State<SupplierListScreen>
     with TickerProviderStateMixin {
   final SupplierService _supplierService = SupplierService();
   final TextEditingController _searchController = TextEditingController();
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<SupplierModel> _suppliers = [];
   List<SupplierModel> _filteredSuppliers = [];
   bool _isLoading = true;
-  String _selectedFilter = 'todos';
+  String _selectedFilter = 'todos'; // 'todos', 'A', 'I'
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -57,34 +54,26 @@ class _SupplierListScreenState extends State<SupplierListScreen>
     _animationController.forward();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadSuppliers() async {
+    setState(() => _isLoading = true);
     try {
-      setState(() => _isLoading = true);
-
       List<SupplierModel> suppliers;
       switch (_selectedFilter) {
-        case 'activos':
+        case 'A':
           suppliers = await _supplierService.getActiveSuppliers();
           break;
-        case 'inactivos':
+        case 'I':
           suppliers = await _supplierService.getInactiveSuppliers();
           break;
         default:
           suppliers = await _supplierService.getAllSuppliers();
       }
-
       setState(() {
         _suppliers = suppliers;
         _filteredSuppliers = suppliers;
         _isLoading = false;
       });
+      _filterSuppliers(_searchController.text);
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorSnackBar('Error al cargar proveedores: $e');
@@ -97,11 +86,9 @@ class _SupplierListScreenState extends State<SupplierListScreen>
         _filteredSuppliers = _suppliers;
       } else {
         _filteredSuppliers = _suppliers.where((supplier) {
-          return supplier.nombre.toLowerCase().contains(query.toLowerCase()) ||
-              (supplier.contacto?.toLowerCase().contains(query.toLowerCase()) ??
-                  false) ||
-              (supplier.email?.toLowerCase().contains(query.toLowerCase()) ??
-                  false);
+          return supplier.name.toLowerCase().contains(query.toLowerCase()) ||
+              supplier.ruc.toLowerCase().contains(query.toLowerCase()) ||
+              supplier.email.toLowerCase().contains(query.toLowerCase());
         }).toList();
       }
     });
@@ -132,16 +119,6 @@ class _SupplierListScreenState extends State<SupplierListScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: FuturisticSidebar(
-        currentRoute: '/suppliers',
-        onRouteSelected: (route) {
-          Navigator.pop(context);
-          if (route != '/suppliers') {
-            _navigateToRoute(route);
-          }
-        },
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -201,8 +178,12 @@ class _SupplierListScreenState extends State<SupplierListScreen>
               borderRadius: BorderRadius.circular(12),
             ),
             child: IconButton(
-              onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-              icon: const Icon(Icons.menu, color: AppColors.primary, size: 24),
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Icons.arrow_back,
+                color: AppColors.primary,
+                size: 24,
+              ),
             ),
           ),
           const SizedBox(width: 15),
@@ -265,7 +246,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                   onChanged: _filterSuppliers,
                   style: const TextStyle(color: AppColors.textPrimary),
                   decoration: InputDecoration(
-                    hintText: 'Buscar por nombre, contacto o email...',
+                    hintText: 'Buscar por nombre, RUC o email...',
                     hintStyle: const TextStyle(color: AppColors.textHint),
                     prefixIcon: const Icon(
                       Icons.search,
@@ -294,17 +275,14 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                   ),
                 ),
               ),
-
               const SizedBox(height: 15),
-
-              // Filtros de estado
               Row(
                 children: [
                   Expanded(child: _buildFilterChip('Todos', 'todos')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildFilterChip('Activos', 'activos')),
-                  const SizedBox(width: 10),
-                  Expanded(child: _buildFilterChip('Inactivos', 'inactivos')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Activos', 'A')),
+                  const SizedBox(width: 8),
+                  Expanded(child: _buildFilterChip('Inactivos', 'I')),
                 ],
               ),
             ],
@@ -322,7 +300,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
         _loadSuppliers();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
         decoration: BoxDecoration(
           gradient: isSelected
               ? const LinearGradient(
@@ -343,7 +321,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
           style: TextStyle(
             color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize: 12,
+            fontSize: 11,
           ),
           textAlign: TextAlign.center,
         ),
@@ -377,7 +355,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Total', _suppliers.length, Icons.business),
+              _buildStatItem('Total', _suppliers.length, Icons.people),
               _buildStatItem(
                 'Activos',
                 _suppliers.where((s) => s.isActivo).length,
@@ -396,21 +374,24 @@ class _SupplierListScreenState extends State<SupplierListScreen>
   }
 
   Widget _buildStatItem(String label, int value, IconData icon) {
+    Color iconColor = AppColors.primary;
+    if (label == 'Inactivos') iconColor = AppColors.error;
+
     return Column(
       children: [
-        Icon(icon, color: AppColors.primary, size: 20),
+        Icon(icon, color: iconColor, size: 18),
         const SizedBox(height: 4),
         Text(
           value.toString(),
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 14,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 10),
         ),
       ],
     );
@@ -447,13 +428,23 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                     child: SupplierCard(
                       supplier: supplier,
                       onTap: () {
-                      },
-                      onView: () {
+                        AppRoutes.navigateToSupplierDetail(context, supplier);
                       },
                       onEdit: () {
+                        // Navega al formulario de edición pasando el supplier y el flag isEditing
+                        AppRoutes.navigateToSupplierForm(
+                          context,
+                          supplier: supplier,
+                          isEditing: true,
+                        );
                       },
                       onDelete: () {
-                        _showDeleteRestoreDialog(supplier);
+                        // Solo muestra el diálogo de eliminar/restaurar según el estado
+                        if ((_selectedFilter == 'A' && supplier.isActivo) ||
+                            (_selectedFilter == 'I' && !supplier.isActivo) ||
+                            _selectedFilter == 'todos') {
+                          _showDeleteRestoreDialog(supplier);
+                        }
                       },
                     ),
                   ),
@@ -471,11 +462,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.business_outlined,
-            size: 80,
-            color: AppColors.textHint,
-          ),
+          const Icon(Icons.people_outline, size: 80, color: AppColors.textHint),
           const SizedBox(height: 16),
           const Text(
             'No hay proveedores disponibles',
@@ -514,6 +501,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
       ),
       child: FloatingActionButton(
         onPressed: () {
+          AppRoutes.navigateToSupplierForm(context);
         },
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -533,8 +521,8 @@ class _SupplierListScreenState extends State<SupplierListScreen>
         ),
         content: Text(
           supplier.isActivo
-              ? '¿Estás seguro de que deseas eliminar a ${supplier.nombre}?'
-              : '¿Estás seguro de que deseas restaurar a ${supplier.nombre}?',
+              ? '¿Estás seguro de que deseas eliminar ${supplier.name}?'
+              : '¿Estás seguro de que deseas restaurar ${supplier.name}?',
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
@@ -546,9 +534,9 @@ class _SupplierListScreenState extends State<SupplierListScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _deleteOrRestoreSupplier(supplier);
+              await _deleteOrRestoreSupplier(supplier);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: supplier.isActivo
@@ -577,28 +565,6 @@ class _SupplierListScreenState extends State<SupplierListScreen>
       _loadSuppliers();
     } catch (e) {
       _showErrorSnackBar('Error: $e');
-    }
-  }
-
-  void _navigateToRoute(String route) {
-    switch (route) {
-      case AppConstants.homeRoute:
-        AppRoutes.navigateToHome(context);
-        break;
-      case AppConstants.clientesRoute:
-        AppRoutes.navigateToClientes(context);
-        break;
-      case AppConstants.loginRoute:
-        AppRoutes.navigateToLogin(context);
-        break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Navegando a: $route'),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
     }
   }
 }

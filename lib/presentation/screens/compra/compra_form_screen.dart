@@ -33,11 +33,34 @@ class _CompraFormScreenState extends State<CompraFormScreen>
   final List<CompraDetalleModel> _carrito = [];
   bool _isLoading = false;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
   @override
   void initState() {
     super.initState();
+    _setupAnimations();
     _loadSuppliers();
     _loadProductos();
+  }
+
+  void _setupAnimations() {
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _animationController.forward();
   }
 
   Future<void> _loadSuppliers() async {
@@ -51,11 +74,8 @@ class _CompraFormScreenState extends State<CompraFormScreen>
   }
 
   double get subtotal => _carrito.fold(0, (sum, d) => sum + d.subtotal);
-
   double get igv => subtotal * 0.18;
-
   double get total => subtotal + igv;
-
   int get cantidadTotal => _carrito.fold(0, (sum, d) => sum + d.cantidad);
 
   void _addProductoToCarrito() {
@@ -73,15 +93,15 @@ class _CompraFormScreenState extends State<CompraFormScreen>
           cantidad: _cantidadProducto,
           precioUnitario: _selectedProducto!.precioVenta,
           subtotal: _selectedProducto!.precioVenta * _cantidadProducto,
-          estado: 'activo',
-          ruc: _selectedSupplier?.supplierID?.toString() ?? '',
+          estado: 'A',
+          ruc: _selectedSupplier?.ruc ?? '',
           producto: _selectedProducto!,
           compra: CompraModel(
             compraID: null,
             fechaCompra: DateTime.now(),
             totalCompra: 0,
             observaciones: _observaciones,
-            estado: 'activo',
+            estado: 'A',
             cantidad: 0,
             supplier: _selectedSupplier ?? _suppliers.first,
           ),
@@ -111,7 +131,7 @@ class _CompraFormScreenState extends State<CompraFormScreen>
         fechaCompra: DateTime.now(),
         totalCompra: total,
         observaciones: _observaciones,
-        estado: 'activo',
+        estado: 'A',
         cantidad: cantidadTotal,
         supplier: _selectedSupplier!,
       );
@@ -263,30 +283,36 @@ class _CompraFormScreenState extends State<CompraFormScreen>
   }
 
   Widget _buildForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 10),
-          _buildSupplierDropdown(),
-          const SizedBox(height: 20),
-          _buildProductoSelector(),
-          const SizedBox(height: 20),
-          _buildCarrito(),
-          const SizedBox(height: 20),
-          _buildObservacionesField(),
-          const SizedBox(height: 20),
-          _buildResumen(),
-          const SizedBox(height: 30),
-          Row(
+    return SlideTransition(
+      position: _slideAnimation,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: _buildCancelButton()),
-              const SizedBox(width: 15),
-              Expanded(child: _buildSaveButton()),
+              const SizedBox(height: 10),
+              _buildSupplierDropdown(),
+              const SizedBox(height: 20),
+              _buildProductoSelector(),
+              const SizedBox(height: 20),
+              _buildCarrito(),
+              const SizedBox(height: 20),
+              _buildObservacionesField(),
+              const SizedBox(height: 20),
+              _buildResumen(),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Expanded(child: _buildCancelButton()),
+                  const SizedBox(width: 15),
+                  Expanded(child: _buildSaveButton()),
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -299,7 +325,7 @@ class _CompraFormScreenState extends State<CompraFormScreen>
             (supplier) => DropdownMenuItem(
               value: supplier,
               child: Text(
-                supplier.nombre,
+                supplier.name,
                 style: const TextStyle(color: AppColors.textPrimary),
               ),
             ),
@@ -341,9 +367,27 @@ class _CompraFormScreenState extends State<CompraFormScreen>
                 .map(
                   (producto) => DropdownMenuItem(
                     value: producto,
-                    child: Text(
-                      producto.nombreCompleto,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            producto.nombreCompleto,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '(Stock: ${producto.stock})',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )
